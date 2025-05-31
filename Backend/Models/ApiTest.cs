@@ -14,7 +14,7 @@ namespace Backend.Models
         public string? ExpectedResponse { get; set; }
         public int? TimeoutSeconds { get; set; }
         [Required]
-        public int CreatedByUserId { get; set; } = default!;
+        public string CreatedByUserId { get; set; } = default!;
         [ForeignKey("CreatedByUserId")]
         public ApplicationUser CreatedByUser { get; set; } = default!;
     }

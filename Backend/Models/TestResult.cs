@@ -21,7 +21,7 @@ public class TestResult
     public SqlTest? SqlTest { get; set; }
 
     [Required]
-    public int ExecutedByUserId { get; set; } = default!;
+    public string ExecutedByUserId { get; set; } = default!;
 
     [ForeignKey("ExecutedByUserId")]
     public ApplicationUser ExecutedByUser { get; set; } = default!;

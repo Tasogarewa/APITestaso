@@ -18,7 +18,7 @@ public class SqlTest
     public string DatabaseConnectionName { get; set; } = "DefaultConnection";
 
     [Required]
-    public int CreatedByUserId { get; set; } = default!;
+    public string CreatedByUserId { get; set; } = default!;
 
     [ForeignKey("CreatedByUserId")]
     public ApplicationUser CreatedByUser { get; set; } = default!;

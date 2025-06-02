@@ -38,6 +38,7 @@ internal class Program
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
             };
         });
+        builder.Services.AddAuthorization();
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
@@ -58,6 +59,7 @@ internal class Program
 
         app.UseHttpsRedirection();
 
+        app.UseAuthentication(); 
         app.UseAuthorization();
 
         app.MapControllers();

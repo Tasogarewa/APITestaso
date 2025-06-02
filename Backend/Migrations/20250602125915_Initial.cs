@@ -84,6 +84,7 @@ namespace Backend.Migrations
                     Body = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ExpectedResponse = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TimeoutSeconds = table.Column<int>(type: "int", nullable: true),
+                    ExpectedStatusCode = table.Column<int>(type: "int", nullable: false),
                     CreatedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>

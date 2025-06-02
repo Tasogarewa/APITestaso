@@ -40,6 +40,9 @@ namespace Backend.Migrations
                     b.Property<string>("ExpectedResponse")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("ExpectedStatusCode")
+                        .HasColumnType("int");
+
                     b.Property<string>("HeadersJson")
                         .HasColumnType("nvarchar(max)");
 

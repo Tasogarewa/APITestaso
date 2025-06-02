@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250531100755_Initial")]
+    [Migration("20250602125915_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -42,6 +42,9 @@ namespace Backend.Migrations
 
                     b.Property<string>("ExpectedResponse")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ExpectedStatusCode")
+                        .HasColumnType("int");
 
                     b.Property<string>("HeadersJson")
                         .HasColumnType("nvarchar(max)");

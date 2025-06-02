@@ -13,6 +13,7 @@ namespace Backend.Models
         public string? Body { get; set; }
         public string? ExpectedResponse { get; set; }
         public int? TimeoutSeconds { get; set; }
+        public int ExpectedStatusCode { get; set; } = 200;
         [Required]
         public string CreatedByUserId { get; set; } = default!;
         [ForeignKey("CreatedByUserId")]

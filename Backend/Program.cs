@@ -16,6 +16,8 @@ internal class Program
         var jwtKey = builder.Configuration["Jwt:Key"];
         var jwtIssuer = builder.Configuration["Jwt:Issuer"];
         builder.Services.AddScoped<JwtService>();
+        builder.Services.AddScoped<TestRunnerService>();
+        builder.Services.AddHttpClient();
         builder.Services.AddCors();
         builder.Services.AddAuthentication(options =>
         {

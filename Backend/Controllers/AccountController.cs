@@ -53,7 +53,21 @@ namespace Backend.Controllers
                 return Unauthorized();
 
             var token = _jwtService.GenerateToken(user);
+            
             return Ok(new { token });
+        }
+        [HttpPost("SetConnectionString")]
+        public async Task<IActionResult> SetConnectionString([FromBody] string connectionString)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null) return NotFound();
+
+            user.DatabaseConnectionString = connectionString;
+            await _userManager.UpdateAsync(user);
+
+            return Ok("Connection string saved.");
         }
     }
 }

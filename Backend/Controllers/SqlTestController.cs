@@ -1,4 +1,5 @@
 ﻿using Backend.AppDbContext;
+using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -48,7 +49,7 @@ namespace Backend.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             sqlTest.CreatedByUserId = userId;
-
+            sqlTest.CreatedByUser = null!;
             _context.SqlTests.Add(sqlTest);
             await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetSqlTest), new { id = sqlTest.Id }, sqlTest);

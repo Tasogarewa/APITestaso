@@ -44,12 +44,15 @@ namespace Backend.Controllers
             return test;
         }
 
-        
+
         [HttpPost]
-        public async Task<ActionResult<ApiTest>> CreateApiTest(ApiTest apiTest)
+        public async Task<ActionResult<ApiTest>> CreateApiTest([FromBody] ApiTest apiTest)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+         
             apiTest.CreatedByUserId = userId;
+            apiTest.CreatedByUser = null!; 
 
             _context.ApiTests.Add(apiTest);
             await _context.SaveChangesAsync();
@@ -57,7 +60,6 @@ namespace Backend.Controllers
             return CreatedAtAction(nameof(GetApiTest), new { id = apiTest.Id }, apiTest);
         }
 
-        
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateApiTest(int id, ApiTest updatedTest)
         {
@@ -74,7 +76,7 @@ namespace Backend.Controllers
             existing.Name = updatedTest.Name;
             existing.Url = updatedTest.Url;
             existing.Method = updatedTest.Method;
-            existing.Body = updatedTest.Body;
+            existing.BodyJson = updatedTest.BodyJson;
             existing.ExpectedResponse = updatedTest.ExpectedResponse;
             existing.ExpectedStatusCode = updatedTest.ExpectedStatusCode;
 

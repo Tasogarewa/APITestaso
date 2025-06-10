@@ -1,8 +1,10 @@
 ﻿using Backend.AppDbContext;
 using Backend.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using System.Text.Json;
 
 namespace Backend.Services
 {
@@ -11,12 +13,14 @@ namespace Backend.Services
         public readonly ApplicationDbContext _dbContext;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
-
+        private readonly UserManager<ApplicationUser> _userManager;
         public TestRunnerService(
             ApplicationDbContext dbContext,
             IHttpClientFactory httpClientFactory,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            UserManager<ApplicationUser> userManager)
         {
+            _userManager = userManager;
             _dbContext = dbContext;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -54,7 +58,7 @@ namespace Backend.Services
 
             foreach (var test in sqlTests)
             {
-                var result = await ExecuteSqlTestAsync(test, userId);
+                var result = await RunSingleSqlTestAsync(test, userId);
                 results.Add(result);
             }
 
@@ -64,7 +68,31 @@ namespace Backend.Services
             return results;
         }
 
-     
+        private void AddHeadersToClient(HttpClient client, Dictionary<string, string>? headers)
+        {
+            if (headers == null) return;
+
+            foreach (var header in headers)
+            {
+                if (header.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = header.Value.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 2)
+                    {
+                        client.DefaultRequestHeaders.Authorization =
+                            new System.Net.Http.Headers.AuthenticationHeaderValue(parts[0], parts[1]);
+                    }
+                    else
+                    {
+                        client.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
+                    }
+                }
+                else
+                {
+                    client.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
+                }
+            }
+        }
         private async Task<TestResult> ExecuteApiTestAsync(ApiTest test, string userId)
         {
             var result = new TestResult
@@ -73,30 +101,42 @@ namespace Backend.Services
                 ExecutedByUserId = userId,
                 ExecutedAt = DateTime.UtcNow
             };
+            string finalUrl;
 
+            if (test.IsMock)
+            {
+                var mockBaseUrl = _configuration["MockServer:PostmanMockBaseUrl"];
+                finalUrl = $"{mockBaseUrl.TrimEnd('/')}/{test.Url.Replace("https://localhost:7200", "").TrimStart('/')}";
+            }
+            else
+            {
+                finalUrl = test.Url;
+            }
             try
             {
                 var client = _httpClientFactory.CreateClient();
+                AddHeadersToClient(client, test.Headers);
                 HttpResponseMessage response;
+                var requestBody = test.BodyJson != null
+                    ? new StringContent(JsonSerializer.Serialize(test.BodyJson), Encoding.UTF8, "application/json")
+                    : null;
 
                 switch (test.Method.ToUpper())
                 {
                     case "GET":
-                        response = await client.GetAsync(test.Url);
+                        response = await client.GetAsync(finalUrl);
                         break;
 
                     case "POST":
-                        var postContent = new StringContent(test.Body ?? "", Encoding.UTF8, "application/json");
-                        response = await client.PostAsync(test.Url, postContent);
+                        response = await client.PostAsync(finalUrl, requestBody ?? new StringContent(""));
                         break;
 
                     case "PUT":
-                        var putContent = new StringContent(test.Body ?? "", Encoding.UTF8, "application/json");
-                        response = await client.PutAsync(test.Url, putContent);
+                        response = await client.PutAsync(finalUrl, requestBody ?? new StringContent(""));
                         break;
 
                     case "DELETE":
-                        response = await client.DeleteAsync(test.Url);
+                        response = await client.DeleteAsync(finalUrl);
                         break;
 
                     default:
@@ -106,13 +146,13 @@ namespace Backend.Services
                 var respBody = await response.Content.ReadAsStringAsync();
                 result.Response = respBody;
 
-                
-                bool statusOk = response.StatusCode.GetHashCode() == test.ExpectedStatusCode;
-                bool bodyOk = string.IsNullOrEmpty(test.ExpectedResponse)
-                    || respBody.Contains(test.ExpectedResponse);
+                bool statusOk = (int)response.StatusCode == test.ExpectedStatusCode;
+                bool bodyOk = string.IsNullOrEmpty(test.ExpectedResponse) || respBody.Contains(test.ExpectedResponse);
 
                 result.IsSuccess = statusOk && bodyOk;
-                result.ErrorMessage = result.IsSuccess ? null : $"Expected status: {test.ExpectedStatusCode}, got: {(int)response.StatusCode}";
+                result.ErrorMessage = result.IsSuccess
+                    ? null
+                    : $"Expected status: {test.ExpectedStatusCode}, got: {(int)response.StatusCode}";
             }
             catch (Exception ex)
             {
@@ -123,66 +163,50 @@ namespace Backend.Services
             return result;
         }
 
-     
-        private async Task<TestResult> ExecuteSqlTestAsync(SqlTest test, string userId)
+        public async Task<TestResult> RunSingleSqlTestAsync(SqlTest test, string userId)
         {
-            var result = new TestResult
+            var user = await _userManager.FindByIdAsync(userId);
+            var connectionString = user?.DatabaseConnectionString;
+
+            if (string.IsNullOrEmpty(connectionString))
             {
-                SqlTestId = test.Id,
-                ExecutedByUserId = userId,
-                ExecutedAt = DateTime.UtcNow
-            };
+                return new TestResult
+                {
+                    SqlTestId = test.Id,
+                     IsSuccess = false,
+                     ErrorMessage = "User has not set a database connection string."
+                };
+            }
 
             try
             {
-                
-                var connString = _configuration.GetConnectionString(test.DatabaseConnectionName);
-                using var connection = new SqlConnection(connString);
+                using var connection = new SqlConnection(connectionString);
                 await connection.OpenAsync();
 
                 using var command = new SqlCommand(test.SqlQuery, connection);
-                var reader = await command.ExecuteReaderAsync();
+                var actualResult = (await command.ExecuteScalarAsync())?.ToString();
 
-             
-                var sb = new StringBuilder();
-                if (reader.HasRows)
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        for (int i = 0; i < reader.FieldCount; i++)
-                        {
-                            sb.Append(reader[i]?.ToString());
-                            if (i < reader.FieldCount - 1)
-                                sb.Append(", ");
-                        }
-                        sb.AppendLine();
-                    }
-                }
+                bool success = actualResult == test.ExpectedResult;
 
-                var actual = sb.ToString().TrimEnd();
-                result.Response = actual;
-
-                
-                if (string.IsNullOrEmpty(test.ExpectedResult))
+                return new TestResult
                 {
-                    result.IsSuccess = true;
-                }
-                else
-                {
-                    result.IsSuccess = actual.Contains(test.ExpectedResult);
-                    if (!result.IsSuccess)
-                    {
-                        result.ErrorMessage = $"Expected: '{test.ExpectedResult}', got: '{actual}'";
-                    }
-                }
+                    SqlTestId = test.Id,
+                    IsSuccess = success,
+                     Response = actualResult,
+                    ErrorMessage = success ? "Test passed." : "Test failed."
+                };
             }
             catch (Exception ex)
             {
-                result.IsSuccess = false;
-                result.ErrorMessage = ex.Message;
+                return new TestResult
+                {
+                    SqlTestId = test.Id,
+                    IsSuccess = false,
+                    ErrorMessage = $"Exception: {ex.Message}"
+                };
             }
-
-            return result;
         }
+
     }
+
 }

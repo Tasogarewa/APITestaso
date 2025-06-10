@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250602125915_Initial")]
+    [Migration("20250609161634_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -33,7 +33,7 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Body")
+                    b.Property<string>("BodyJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedByUserId")
@@ -46,8 +46,11 @@ namespace Backend.Migrations
                     b.Property<int>("ExpectedStatusCode")
                         .HasColumnType("int");
 
-                    b.Property<string>("HeadersJson")
+                    b.Property<string>("Headers")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsMock")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Method")
                         .IsRequired()
@@ -81,6 +84,9 @@ namespace Backend.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DatabaseConnectionString")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")

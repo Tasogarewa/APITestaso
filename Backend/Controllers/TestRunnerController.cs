@@ -52,17 +52,15 @@ namespace Backend.Controllers
         public async Task<IActionResult> RunSqlTestById(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             var test = await _testRunner._dbContext.SqlTests
                 .FirstOrDefaultAsync(t => t.Id == id && t.CreatedByUserId == userId);
 
             if (test == null)
                 return NotFound();
 
-            var result = await _testRunner
-                .RunAllSqlTestsAsync(userId);
+            var result = await _testRunner.RunSingleSqlTestAsync(test, userId);
 
-            return Ok(result.Where(r => r.SqlTestId == id).FirstOrDefault());
+            return Ok(result);
         }
     }
 }

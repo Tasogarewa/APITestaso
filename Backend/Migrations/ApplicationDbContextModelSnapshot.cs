@@ -30,7 +30,7 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Body")
+                    b.Property<string>("BodyJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedByUserId")
@@ -43,8 +43,11 @@ namespace Backend.Migrations
                     b.Property<int>("ExpectedStatusCode")
                         .HasColumnType("int");
 
-                    b.Property<string>("HeadersJson")
+                    b.Property<string>("Headers")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsMock")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Method")
                         .IsRequired()
@@ -78,6 +81,9 @@ namespace Backend.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DatabaseConnectionString")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")

@@ -5,6 +5,6 @@ namespace Backend.Models
 {
     public class ApplicationUser:IdentityUser
     {
-
+        public string? DatabaseConnectionString { get; set; }
     }
 }

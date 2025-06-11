@@ -1,8 +1,10 @@
-﻿using Backend.Services;
+﻿using Backend.Models;
+using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
+using System.Security.Claims;
 
 namespace Backend.Controllers
 {
@@ -43,9 +45,9 @@ namespace Backend.Controllers
                 return NotFound();
 
             var result = await _testRunner
-                .RunAllApiTestsAsync(userId);
+                .ExecuteApiTestAsync(test, userId);
 
-            return Ok(result.Where(r => r.ApiTestId == id).FirstOrDefault());
+            return Ok(result);
         }
 
         [HttpPost("RunSqlTest/{id}")]
@@ -61,6 +63,24 @@ namespace Backend.Controllers
             var result = await _testRunner.RunSingleSqlTestAsync(test, userId);
 
             return Ok(result);
+        }
+        [HttpPost("RunApiScenarioById/{scenarioId}")]
+        public async Task<IActionResult> RunApiScenarioById(int scenarioId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var scenario = await _testRunner._dbContext.ApiTestScenarios
+                .Include(s => s.Tests)
+                .FirstOrDefaultAsync(s => s.Id == scenarioId && s.CreatedByUserId == userId);
+
+            if (scenario == null)
+                return NotFound("Scenario not found or access denied.");
+
+            var httpClient = _testRunner._httpClientFactory.CreateClient();
+
+            var results = await _testRunner.ExecuteScenarioAsync(scenario, httpClient, userId);
+
+            return Ok(results);
         }
     }
 }

@@ -30,6 +30,9 @@ namespace Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("ApiTestScenarioId")
+                        .HasColumnType("int");
+
                     b.Property<string>("BodyJson")
                         .HasColumnType("nvarchar(max)");
 
@@ -57,6 +60,9 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Save")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("TimeoutSeconds")
                         .HasColumnType("int");
 
@@ -66,9 +72,34 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ApiTestScenarioId");
+
                     b.HasIndex("CreatedByUserId");
 
                     b.ToTable("ApiTests");
+                });
+
+            modelBuilder.Entity("Backend.Models.ApiTestScenario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ScenarioName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.ToTable("ApiTestScenarios");
                 });
 
             modelBuilder.Entity("Backend.Models.ApplicationUser", b =>
@@ -288,16 +319,22 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ExpectedResult")
+                    b.Property<string>("ExpectedJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ParametersJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SqlQuery")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TestType")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -316,6 +353,9 @@ namespace Backend.Migrations
 
                     b.Property<int?>("ApiTestId")
                         .HasColumnType("int");
+
+                    b.Property<long?>("DurationMilliseconds")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("ErrorMessage")
                         .HasColumnType("nvarchar(max)");
@@ -348,6 +388,21 @@ namespace Backend.Migrations
                 });
 
             modelBuilder.Entity("Backend.Models.ApiTest", b =>
+                {
+                    b.HasOne("Backend.Models.ApiTestScenario", null)
+                        .WithMany("Tests")
+                        .HasForeignKey("ApiTestScenarioId");
+
+                    b.HasOne("Backend.Models.ApplicationUser", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("Backend.Models.ApiTestScenario", b =>
                 {
                     b.HasOne("Backend.Models.ApplicationUser", "CreatedByUser")
                         .WithMany()
@@ -441,6 +496,11 @@ namespace Backend.Migrations
                     b.Navigation("ExecutedByUser");
 
                     b.Navigation("SqlTest");
+                });
+
+            modelBuilder.Entity("Backend.Models.ApiTestScenario", b =>
+                {
+                    b.Navigation("Tests");
                 });
 #pragma warning restore 612, 618
         }

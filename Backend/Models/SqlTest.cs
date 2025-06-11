@@ -2,6 +2,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+public enum SqlTestType
+{
+    Scalar,       
+    ResultSet,    
+    Schema       
+}
+
 public class SqlTest
 {
     public int Id { get; set; }
@@ -10,9 +17,14 @@ public class SqlTest
     public string Name { get; set; } = default!;
 
     [Required]
-    public string SqlQuery { get; set; } = default!;
+    public string? SqlQuery { get; set; } = default!;
 
-    public string? ExpectedResult { get; set; }
+    [Required]
+    public SqlTestType TestType { get; set; } = SqlTestType.Scalar;
+
+    public string? ExpectedJson { get; set; }
+
+    public string? ParametersJson { get; set; }
 
     [Required]
     public string DatabaseConnectionName { get; set; } = "DefaultConnection";

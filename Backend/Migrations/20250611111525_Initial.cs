@@ -73,27 +73,19 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ApiTests",
+                name: "ApiTestScenarios",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Method = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Headers = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    BodyJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ExpectedResponse = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsMock = table.Column<bool>(type: "bit", nullable: false),
-                    TimeoutSeconds = table.Column<int>(type: "int", nullable: true),
-                    ExpectedStatusCode = table.Column<int>(type: "int", nullable: false),
+                    ScenarioName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ApiTests", x => x.Id);
+                    table.PrimaryKey("PK_ApiTestScenarios", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ApiTests_AspNetUsers_CreatedByUserId",
+                        name: "FK_ApiTestScenarios_AspNetUsers_CreatedByUserId",
                         column: x => x.CreatedByUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
@@ -193,7 +185,9 @@ namespace Backend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SqlQuery = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ExpectedResult = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TestType = table.Column<int>(type: "int", nullable: false),
+                    ExpectedJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ParametersJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DatabaseConnectionName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
@@ -202,6 +196,41 @@ namespace Backend.Migrations
                     table.PrimaryKey("PK_SqlTests", x => x.Id);
                     table.ForeignKey(
                         name: "FK_SqlTests_AspNetUsers_CreatedByUserId",
+                        column: x => x.CreatedByUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ApiTests",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Method = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Headers = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BodyJson = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ExpectedResponse = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsMock = table.Column<bool>(type: "bit", nullable: false),
+                    TimeoutSeconds = table.Column<int>(type: "int", nullable: true),
+                    ExpectedStatusCode = table.Column<int>(type: "int", nullable: false),
+                    CreatedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Save = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ApiTestScenarioId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ApiTests", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ApiTests_ApiTestScenarios_ApiTestScenarioId",
+                        column: x => x.ApiTestScenarioId,
+                        principalTable: "ApiTestScenarios",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ApiTests_AspNetUsers_CreatedByUserId",
                         column: x => x.CreatedByUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
@@ -219,6 +248,7 @@ namespace Backend.Migrations
                     Response = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ErrorMessage = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ApiTestId = table.Column<int>(type: "int", nullable: true),
+                    DurationMilliseconds = table.Column<long>(type: "bigint", nullable: true),
                     SqlTestId = table.Column<int>(type: "int", nullable: true),
                     ExecutedByUserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
@@ -244,8 +274,18 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ApiTests_ApiTestScenarioId",
+                table: "ApiTests",
+                column: "ApiTestScenarioId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ApiTests_CreatedByUserId",
                 table: "ApiTests",
+                column: "CreatedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ApiTestScenarios_CreatedByUserId",
+                table: "ApiTestScenarios",
                 column: "CreatedByUserId");
 
             migrationBuilder.CreateIndex(
@@ -337,6 +377,9 @@ namespace Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "SqlTests");
+
+            migrationBuilder.DropTable(
+                name: "ApiTestScenarios");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

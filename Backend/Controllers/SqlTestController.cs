@@ -71,7 +71,9 @@ namespace Backend.Controllers
 
             existing.Name = updatedTest.Name;
             existing.SqlQuery = updatedTest.SqlQuery;
-            existing.ExpectedResult = updatedTest.ExpectedResult;
+            existing.TestType = updatedTest.TestType;
+            existing.ExpectedJson = updatedTest.ExpectedJson;
+            existing.ParametersJson = updatedTest.ParametersJson;
             existing.DatabaseConnectionName = updatedTest.DatabaseConnectionName;
 
             await _context.SaveChangesAsync();

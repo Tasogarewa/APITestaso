@@ -15,10 +15,8 @@ namespace Backend.Models
 
         public string Url { get; set; } = default!;
 
-        
         public Dictionary<string, string>? Headers { get; set; }
 
-   
         public object? BodyJson { get; set; }
 
         public string? ExpectedResponse { get; set; }
@@ -32,5 +30,8 @@ namespace Backend.Models
 
         [ForeignKey("CreatedByUserId")]
         public ApplicationUser CreatedByUser { get; set; } = default!;
+
+       
+        public Dictionary<string, string>? Save { get; set; }
     }
 }

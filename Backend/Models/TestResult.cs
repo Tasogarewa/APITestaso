@@ -16,7 +16,7 @@ public class TestResult
 
     public int? ApiTestId { get; set; }
     public ApiTest? ApiTest { get; set; }
-
+    public long? DurationMilliseconds { get; set; }
     public int? SqlTestId { get; set; }
     public SqlTest? SqlTest { get; set; }
 

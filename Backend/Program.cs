@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Quartz;
 using System.Text;
 internal class Program
 {
@@ -16,7 +17,26 @@ internal class Program
         var jwtKey = builder.Configuration["Jwt:Key"];
         var jwtIssuer = builder.Configuration["Jwt:Issuer"];
         var jwtAudience = builder.Configuration["Jwt:Audience"];
+        builder.Services.AddQuartz(q =>
+        {
+            q.UseMicrosoftDependencyInjectionJobFactory();
+
+           
+            q.UsePersistentStore(options =>
+            {
+                options.UseProperties = true;
+                options.UseSqlServer(sqlServerOptions =>
+                {
+                    sqlServerOptions.ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                });
+
+                options.UseJsonSerializer(); 
+            });
+        });
+
+        builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
         builder.Services.AddScoped<JwtService>();
+        builder.Services.AddScoped<SchedulerService>();
         builder.Services.AddScoped<TestRunnerService>();
         builder.Services.AddHttpClient();
         builder.Services.AddCors();

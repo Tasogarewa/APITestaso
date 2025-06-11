@@ -5,28 +5,112 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Backend.Services
 {
     public class TestRunnerService
     {
         public readonly ApplicationDbContext _dbContext;
-        private readonly IHttpClientFactory _httpClientFactory;
+        public readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly UserManager<ApplicationUser> _userManager;
+
         public TestRunnerService(
             ApplicationDbContext dbContext,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             UserManager<ApplicationUser> userManager)
         {
-            _userManager = userManager;
             _dbContext = dbContext;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
+            _userManager = userManager;
         }
 
-     
+        public async Task<List<TestResult>> ExecuteScenarioAsync(ApiTestScenario scenario, HttpClient client, string executedByUserId)
+        {
+            var state = new Dictionary<string, string>();
+            var results = new List<TestResult>();
+
+            foreach (var step in scenario.Tests)
+            {
+                var testResult = new TestResult
+                {
+                    ExecutedAt = DateTime.UtcNow,
+                    ApiTestId = step.Id,
+                    ExecutedByUserId = executedByUserId,
+                    IsSuccess = false
+                };
+
+                try
+                {
+                    await MeasureExecutionTimeAsync(testResult, async () =>
+                    {
+                        string url = ReplaceTokens(step.Url, state);
+
+                        HttpContent? content = null;
+                        if (step.BodyJson != null)
+                        {
+                            string bodyStr = JsonSerializer.Serialize(step.BodyJson);
+                            bodyStr = ReplaceTokens(bodyStr, state);
+                            content = new StringContent(bodyStr, Encoding.UTF8, "application/json");
+                        }
+
+                        client.DefaultRequestHeaders.Clear();
+                        AddHeadersToClient(client, step.Headers);
+
+                        var request = new HttpRequestMessage(new HttpMethod(step.Method), url);
+                        if (content != null)
+                            request.Content = content;
+
+                        using var cts = new CancellationTokenSource();
+                        if (step.TimeoutSeconds.HasValue && step.TimeoutSeconds > 0)
+                            cts.CancelAfter(TimeSpan.FromSeconds(step.TimeoutSeconds.Value));
+
+                        HttpResponseMessage response = await client.SendAsync(request, cts.Token);
+
+                        int statusCode = (int)response.StatusCode;
+                        string responseBody = await response.Content.ReadAsStringAsync();
+
+                        testResult.Response = $"Status: {statusCode}\nBody:\n{responseBody}";
+
+                        if (statusCode != step.ExpectedStatusCode)
+                            throw new Exception($"Expected status {step.ExpectedStatusCode}, got {statusCode}");
+
+                        if (!string.IsNullOrEmpty(step.ExpectedResponse) && responseBody != step.ExpectedResponse)
+                            throw new Exception("Response body check failed.");
+
+                        if (step.Save != null)
+                        {
+                            foreach (var savePair in step.Save)
+                            {
+                                string value = ExtractJsonValue(responseBody, savePair.Value);
+                                state[savePair.Key] = value;
+                            }
+                        }
+
+                        testResult.IsSuccess = true;
+                    });
+                }
+                catch (TaskCanceledException)
+                {
+                    testResult.ErrorMessage = $"Test '{step.Name}' timed out.";
+                }
+                catch (Exception ex)
+                {
+                    testResult.ErrorMessage = ex.Message;
+                }
+
+                results.Add(testResult);
+                _dbContext.TestResults.Add(testResult);
+            }
+            
+
+            await _dbContext.SaveChangesAsync();
+            return results;
+        }
+
         public async Task<List<TestResult>> RunAllApiTestsAsync(string userId)
         {
             var apiTests = await _dbContext.ApiTests
@@ -34,20 +118,16 @@ namespace Backend.Services
                 .ToListAsync();
 
             var results = new List<TestResult>();
-
             foreach (var test in apiTests)
             {
                 var result = await ExecuteApiTestAsync(test, userId);
                 results.Add(result);
             }
 
-            await _dbContext.TestResults.AddRangeAsync(results);
             await _dbContext.SaveChangesAsync();
-
             return results;
         }
 
-   
         public async Task<List<TestResult>> RunAllSqlTestsAsync(string userId)
         {
             var sqlTests = await _dbContext.SqlTests
@@ -55,17 +135,217 @@ namespace Backend.Services
                 .ToListAsync();
 
             var results = new List<TestResult>();
-
             foreach (var test in sqlTests)
             {
                 var result = await RunSingleSqlTestAsync(test, userId);
                 results.Add(result);
             }
 
-            await _dbContext.TestResults.AddRangeAsync(results);
             await _dbContext.SaveChangesAsync();
-
             return results;
+        }
+
+        public async Task<TestResult> ExecuteApiTestAsync(ApiTest test, string userId)
+        {
+            var result = new TestResult
+            {
+                ApiTestId = test.Id,
+                ExecutedByUserId = userId,
+                ExecutedAt = DateTime.UtcNow
+            };
+
+            string finalUrl = test.IsMock
+                ? $"{_configuration["MockServer:PostmanMockBaseUrl"]?.TrimEnd('/')}/{test.Url.Replace("https://localhost:7200", "").TrimStart('/')}"
+                : test.Url;
+
+            try
+            {
+                await MeasureExecutionTimeAsync(result, async () =>
+                {
+                    var client = _httpClientFactory.CreateClient();
+                    AddHeadersToClient(client, test.Headers);
+
+                    HttpContent? requestBody = test.BodyJson != null
+                        ? new StringContent(JsonSerializer.Serialize(test.BodyJson), Encoding.UTF8, "application/json")
+                        : null;
+
+                    HttpResponseMessage response = test.Method.ToUpper() switch
+                    {
+                        "GET" => await client.GetAsync(finalUrl),
+                        "POST" => await client.PostAsync(finalUrl, requestBody ?? new StringContent("")),
+                        "PUT" => await client.PutAsync(finalUrl, requestBody ?? new StringContent("")),
+                        "DELETE" => await client.DeleteAsync(finalUrl),
+                        _ => throw new InvalidOperationException($"Unsupported HTTP method: {test.Method}")
+                    };
+
+                    string respBody = await response.Content.ReadAsStringAsync();
+                    result.Response = respBody;
+
+                    result.IsSuccess =
+                        (int)response.StatusCode == test.ExpectedStatusCode &&
+                        (string.IsNullOrEmpty(test.ExpectedResponse) || respBody.Contains(test.ExpectedResponse));
+
+                    if (!result.IsSuccess)
+                        result.ErrorMessage = $"Expected status: {test.ExpectedStatusCode}, got: {(int)response.StatusCode}";
+                });
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.ErrorMessage = ex.Message;
+              
+            }
+            _dbContext.TestResults.Add(result);
+            await _dbContext.SaveChangesAsync();
+            return result;
+        }
+
+        public async Task<TestResult> RunSingleSqlTestAsync(SqlTest test, string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            var cs = user?.DatabaseConnectionString;
+
+            if (string.IsNullOrEmpty(cs))
+            {
+                return new TestResult
+                {
+                    SqlTestId = test.Id,
+                    IsSuccess = false,
+                    ErrorMessage = "User has not set a database connection string.",
+                    ExecutedByUserId = userId,
+                    ExecutedAt = DateTime.UtcNow
+                };
+            }
+
+            try
+            {
+                using var conn = new SqlConnection(cs);
+                await conn.OpenAsync();
+                using var cmd = new SqlCommand(test.SqlQuery, conn);
+
+                if (!string.IsNullOrEmpty(test.ParametersJson))
+                {
+                    var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(test.ParametersJson)!;
+                    foreach (var kv in dict)
+                    {
+                        object? paramValue = kv.Value.ValueKind switch
+                        {
+                            JsonValueKind.String => kv.Value.GetString(),
+                            JsonValueKind.Number => kv.Value.TryGetInt32(out int i) ? i : kv.Value.GetDouble(),
+                            JsonValueKind.True => true,
+                            JsonValueKind.False => false,
+                            JsonValueKind.Null => DBNull.Value,
+                            _ => kv.Value.GetRawText()
+                        };
+
+                        cmd.Parameters.AddWithValue(kv.Key, paramValue ?? DBNull.Value);
+                    }
+                }
+
+                var result = new TestResult
+                {
+                    SqlTestId = test.Id,
+                    ExecutedByUserId = userId,
+                    ExecutedAt = DateTime.UtcNow
+                };
+
+                await MeasureExecutionTimeAsync(result, async () =>
+                {
+                    switch (test.TestType)
+                    {
+                        case SqlTestType.Scalar:
+                            var scalar = (await cmd.ExecuteScalarAsync())?.ToString();
+                            result.Response = scalar;
+                            result.IsSuccess = scalar == test.ExpectedJson;
+                            result.ErrorMessage = result.IsSuccess ? "Passed" : $"Expected '{test.ExpectedJson}', got '{scalar}'";
+                            break;
+
+                        case SqlTestType.ResultSet:
+                            var actual = new List<Dictionary<string, object>>();
+                            using (var rdr = await cmd.ExecuteReaderAsync())
+                            {
+                                while (await rdr.ReadAsync())
+                                {
+                                    var row = new Dictionary<string, object>();
+                                    for (int i = 0; i < rdr.FieldCount; i++)
+                                        row[rdr.GetName(i)] = rdr.GetValue(i);
+                                    actual.Add(row);
+                                }
+                            }
+
+                            var expected = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(test.ExpectedJson!)!;
+                            result.Response = JsonSerializer.Serialize(actual);
+                            result.IsSuccess = CompareResultSets(actual, expected);
+                            result.ErrorMessage = result.IsSuccess ? "Passed" : "Result sets differ";
+                            break;
+
+                        case SqlTestType.Schema:
+                            var spec = JsonSerializer.Deserialize<SchemaSpec>(test.ExpectedJson!)!;
+                            result.IsSuccess = await ValidateSchemaAsync(conn, spec);
+                            result.Response = result.IsSuccess ? "Schema matches spec" : "Schema does not match spec";
+                            result.ErrorMessage = result.IsSuccess ? null : "Schema validation failed";
+                            break;
+                    }
+                });
+
+                _dbContext.TestResults.Add(result);
+                await _dbContext.SaveChangesAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                var failResult = new TestResult
+                {
+                    SqlTestId = test.Id,
+                    ExecutedByUserId = userId,
+                    IsSuccess = false,
+                    ErrorMessage = ex.Message,
+                    ExecutedAt = DateTime.UtcNow
+                };
+
+                _dbContext.TestResults.Add(failResult);
+                await _dbContext.SaveChangesAsync();
+                return failResult;
+            }
+        }
+
+        private async Task<bool> ValidateSchemaAsync(SqlConnection conn, SchemaSpec spec)
+        {
+            var colCmd = new SqlCommand(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @table", conn);
+            colCmd.Parameters.AddWithValue("@table", spec.TableName);
+
+            var actualCols = new List<string>();
+            using (var rdr = await colCmd.ExecuteReaderAsync())
+                while (await rdr.ReadAsync())
+                    actualCols.Add(rdr.GetString(0));
+
+            if (!spec.ExpectedColumns.All(c => actualCols.Contains(c)))
+                return false;
+
+            var idxSql = $@"
+                SELECT name FROM sys.indexes 
+                WHERE object_id = OBJECT_ID(@table) AND is_primary_key = 0";
+
+            using var idxCmd = new SqlCommand(idxSql, conn);
+            idxCmd.Parameters.AddWithValue("@table", spec.TableName);
+
+            var actualIdx = new List<string>();
+            using (var rdr = await idxCmd.ExecuteReaderAsync())
+                while (await rdr.ReadAsync())
+                    actualIdx.Add(rdr.GetString(0));
+
+            return spec.ExpectedIndexes.All(i => actualIdx.Contains(i));
+        }
+
+        private bool CompareResultSets(List<Dictionary<string, object>> actual, List<Dictionary<string, object>> expected)
+        {
+            if (actual.Count != expected.Count) return false;
+
+            var actJson = actual.Select(d => JsonSerializer.Serialize(d)).OrderBy(s => s);
+            var expJson = expected.Select(d => JsonSerializer.Serialize(d)).OrderBy(s => s);
+
+            return actJson.SequenceEqual(expJson);
         }
 
         private void AddHeadersToClient(HttpClient client, Dictionary<string, string>? headers)
@@ -78,14 +358,10 @@ namespace Backend.Services
                 {
                     var parts = header.Value.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length == 2)
-                    {
                         client.DefaultRequestHeaders.Authorization =
                             new System.Net.Http.Headers.AuthenticationHeaderValue(parts[0], parts[1]);
-                    }
                     else
-                    {
                         client.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
-                    }
                 }
                 else
                 {
@@ -93,120 +369,61 @@ namespace Backend.Services
                 }
             }
         }
-        private async Task<TestResult> ExecuteApiTestAsync(ApiTest test, string userId)
+
+        public string ReplaceTokens(string input, Dictionary<string, string> state)
         {
-            var result = new TestResult
+            return Regex.Replace(input, @"\{(\w+)\}", match =>
             {
-                ApiTestId = test.Id,
-                ExecutedByUserId = userId,
-                ExecutedAt = DateTime.UtcNow
+                var key = match.Groups[1].Value;
+                return state.TryGetValue(key, out var val) ? val : match.Value;
+            });
+        }
+
+        public string ExtractJsonValue(string json, string jsonPath)
+        {
+            using var doc = JsonDocument.Parse(json);
+
+            if (!jsonPath.StartsWith("$."))
+                throw new ArgumentException("JSONPath must start with '$.'");
+
+            var pathParts = jsonPath.Substring(2).Split('.');
+
+            JsonElement current = doc.RootElement;
+
+            foreach (var part in pathParts)
+            {
+                if (current.ValueKind != JsonValueKind.Object)
+                    throw new InvalidOperationException($"Property '{part}' not found because current element is not an object.");
+
+                if (!current.TryGetProperty(part, out var next))
+                    throw new KeyNotFoundException($"Property '{part}' not found in JSON.");
+
+                current = next;
+            }
+
+            
+            return current.ValueKind switch
+            {
+                JsonValueKind.String => current.GetString() ?? "",
+                JsonValueKind.Number => current.GetRawText(),
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                JsonValueKind.Null => "null",
+                _ => current.GetRawText() 
             };
-            string finalUrl;
-
-            if (test.IsMock)
-            {
-                var mockBaseUrl = _configuration["MockServer:PostmanMockBaseUrl"];
-                finalUrl = $"{mockBaseUrl.TrimEnd('/')}/{test.Url.Replace("https://localhost:7200", "").TrimStart('/')}";
-            }
-            else
-            {
-                finalUrl = test.Url;
-            }
-            try
-            {
-                var client = _httpClientFactory.CreateClient();
-                AddHeadersToClient(client, test.Headers);
-                HttpResponseMessage response;
-                var requestBody = test.BodyJson != null
-                    ? new StringContent(JsonSerializer.Serialize(test.BodyJson), Encoding.UTF8, "application/json")
-                    : null;
-
-                switch (test.Method.ToUpper())
-                {
-                    case "GET":
-                        response = await client.GetAsync(finalUrl);
-                        break;
-
-                    case "POST":
-                        response = await client.PostAsync(finalUrl, requestBody ?? new StringContent(""));
-                        break;
-
-                    case "PUT":
-                        response = await client.PutAsync(finalUrl, requestBody ?? new StringContent(""));
-                        break;
-
-                    case "DELETE":
-                        response = await client.DeleteAsync(finalUrl);
-                        break;
-
-                    default:
-                        throw new InvalidOperationException($"Unsupported HTTP method: {test.Method}");
-                }
-
-                var respBody = await response.Content.ReadAsStringAsync();
-                result.Response = respBody;
-
-                bool statusOk = (int)response.StatusCode == test.ExpectedStatusCode;
-                bool bodyOk = string.IsNullOrEmpty(test.ExpectedResponse) || respBody.Contains(test.ExpectedResponse);
-
-                result.IsSuccess = statusOk && bodyOk;
-                result.ErrorMessage = result.IsSuccess
-                    ? null
-                    : $"Expected status: {test.ExpectedStatusCode}, got: {(int)response.StatusCode}";
-            }
-            catch (Exception ex)
-            {
-                result.IsSuccess = false;
-                result.ErrorMessage = ex.Message;
-            }
-
-            return result;
         }
-
-        public async Task<TestResult> RunSingleSqlTestAsync(SqlTest test, string userId)
+        private async Task MeasureExecutionTimeAsync(TestResult result, Func<Task> testExecution)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            var connectionString = user?.DatabaseConnectionString;
-
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                return new TestResult
-                {
-                    SqlTestId = test.Id,
-                     IsSuccess = false,
-                     ErrorMessage = "User has not set a database connection string."
-                };
-            }
-
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
-                using var connection = new SqlConnection(connectionString);
-                await connection.OpenAsync();
-
-                using var command = new SqlCommand(test.SqlQuery, connection);
-                var actualResult = (await command.ExecuteScalarAsync())?.ToString();
-
-                bool success = actualResult == test.ExpectedResult;
-
-                return new TestResult
-                {
-                    SqlTestId = test.Id,
-                    IsSuccess = success,
-                     Response = actualResult,
-                    ErrorMessage = success ? "Test passed." : "Test failed."
-                };
+                await testExecution();
             }
-            catch (Exception ex)
+            finally
             {
-                return new TestResult
-                {
-                    SqlTestId = test.Id,
-                    IsSuccess = false,
-                    ErrorMessage = $"Exception: {ex.Message}"
-                };
+                stopwatch.Stop();
+                result.DurationMilliseconds = stopwatch.ElapsedMilliseconds;
             }
         }
-
     }
-
 }

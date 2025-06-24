@@ -1,10 +1,292 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Ласкаво просимо до платформи тестування!";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    .index-page * {
+        box-sizing: border-box;
+    }
+
+    .index-page {
+        margin: 0;
+        font-family: 'Fira Code', 'Courier New', monospace;
+        color: #c0c0c0;
+        background: linear-gradient(135deg, #1c2526, #2e3b3e);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .index-page .header {
+            background: #2e3b3e;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .index-page .main-content {
+            display: flex;
+            flex-grow: 1;
+            max-width: 1200px;
+            margin: 20px auto;
+            width: 100%;
+            padding: 0 20px;
+            gap: 20px;
+        }
+
+        .index-page .sidebar {
+            flex: 1;
+            background: rgba(46, 59, 62, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(109, 130, 153, 0.3);
+        }
+
+            .index-page .sidebar h2 {
+                color: #8aa8c3;
+                text-transform: uppercase;
+                font-size: 16px;
+                margin-bottom: 20px;
+                letter-spacing: 1px;
+            }
+
+        .index-page .profile-card {
+            background: rgba(36, 49, 52, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+            .index-page .profile-card img {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                margin-bottom: 10px;
+            }
+
+            .index-page .profile-card p {
+                margin: 5px 0;
+                color: #6d8299;
+                font-size: 12px;
+            }
+
+            .index-page .profile-card a {
+                display: inline-block;
+                margin: 5px 5px;
+                padding: 8px 15px;
+                background: #6d8299;
+                color: #c0c0c0;
+                text-decoration: none;
+                border-radius: 5px;
+                transition: background 0.3s ease;
+            }
+
+                .index-page .profile-card a:hover {
+                    background: #8aa8c3;
+                }
+
+        .index-page .nav-links {
+            list-style: none;
+            padding: 0;
+        }
+
+            .index-page .nav-links li {
+                margin-bottom: 10px;
+            }
+
+            .index-page .nav-links a {
+                color: #8aa8c3;
+                text-decoration: none;
+                font-size: 14px;
+                display: block;
+                padding: 10px;
+                border-radius: 5px;
+                transition: background 0.3s ease;
+            }
+
+                .index-page .nav-links a:hover {
+                    background: rgba(109, 130, 153, 0.2);
+                }
+
+        .index-page .content {
+            flex: 2;
+            background: rgba(46, 59, 62, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(109, 130, 153, 0.3);
+        }
+
+            .index-page .content h1 {
+                color: #8aa8c3;
+                text-transform: uppercase;
+                font-size: 20px;
+                letter-spacing: 1px;
+                margin-bottom: 20px;
+            }
+
+            .index-page .content p {
+                color: #c0c0c0;
+                font-size: 12px;
+                line-height: 1.6;
+                margin-bottom: 15px;
+            }
+
+        .index-page .features-list {
+            list-style: none;
+            padding: 0;
+        }
+
+            .index-page .features-list li {
+                display: flex;
+                align-items: center;
+                margin-bottom: 10px;
+                font-size: 12px;
+                color: #8aa8c3;
+            }
+
+                .index-page .features-list li::before {
+                    content: '✔';
+                    color: #6d8299;
+                    margin-right: 10px;
+                }
+
+        .index-page .cta-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #6d8299;
+            color: #c0c0c0;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            transition: background 0.3s ease;
+        }
+
+            .index-page .cta-button:hover {
+                background: #8aa8c3;
+            }
+
+    .error-message {
+        color: #ff5555;
+        text-align: center;
+        margin-top: 10px;
+        font-size: 12px;
+        display: none;
+    }
+</style>
+
+<div class="index-page">
+    <header class="header"></header>
+    <div class="main-content">
+        <aside class="sidebar">
+            <h2>Навігація</h2>
+            <div class="profile-card">
+                <img src="https://img.freepik.com/free-vector/flat-design-abstract-portrait-art-style_23-2149123799.jpg" alt="Avatar" />
+                <p id="user-name">Завантаження...</p>
+                <p id="user-email">Завантаження...</p>
+                <p id="error-message" class="error-message">Не вдалося завантажити дані. Увійдіть ще раз.</p>
+                <div id="auth-buttons">
+                    <a href="/Register">Зареєструватися</a>
+                    <a href="/Login">Увійти</a>
+                </div>
+                <a id="profile-link" href="/UserPage" style="display: none;">Перейти до профілю</a>
+                <a id="logout-link" href="#" onclick="logout()" style="display: none;">Вийти</a>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/Faq">Поширені запитання (FAQ)</a></li>
+                <li><a href="/MainPage">Виконати тести</a></li>
+            </ul>
+        </aside>
+        <main class="content">
+            <h1>Ласкаво просимо до платформи тестування!</h1>
+            <p>Наша платформа пропонує зручний інструмент для тестування API та SQL-запитів, автоматизації сценаріїв та аналізу результатів. Незалежно від того, чи ви розробник, тестувальник, чи адміністратор баз даних, ми допоможємо вам оптимізувати вашу роботу.</p>
+            <p>Основні можливості платформи:</p>
+            <ul class="features-list">
+                <li>Створення та виконання API-тестів із підтримкою HTTP-методів (GET, POST, PUT, DELETE).</li>
+                <li>Тестування SQL-запитів із динамічними параметрами.</li>
+                <li>Планування сценаріїв за допомогою Cron-виразів для автоматизації.</li>
+                <li>Експорт результатів у форматах JSON, XML, CSV.</li>
+                <li>Інтеграція з авторизацією через JWT-токени та OAuth 2.0.</li>
+                <li>Використання змінних середовища для гнучкої конфігурації.</li>
+                <li>Тестування продуктивності API з аналізом часу відповіді.</li>
+            </ul>
+            <p>Почніть зараз, створивши свій перший тест, або ознайомтеся з документацією в розділі FAQ для детальних інструкцій.</p>     
+        </main>
+    </div>
 </div>
+
+@section Scripts {
+    <script>
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function logout() {
+            document.cookie = 'AccessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure';
+            document.cookie = 'RefreshToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure';
+            window.location.href = '/Login';
+        }
+                       function navigateWithAuth(event, url) {
+            event.preventDefault();
+            const accessToken = getCookie('AccessToken');
+            if (accessToken) {
+                window.location.href = `${url}?token=${encodeURIComponent(accessToken)}`;
+            } else {
+                document.getElementById('error-message').textContent = 'Увійдіть для доступу до сторінки.';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        }
+        async function fetchUserData() {
+            try {
+                // Отримуємо токен із куки
+                const accessToken = getCookie('AccessToken');
+
+                // Налаштування заголовків
+                const headers = {};
+                if (accessToken) {
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                }
+
+                const response = await fetch('https://localhost:7200/api/account/me', {
+                    method: 'GET',
+                    headers: headers,
+                    credentials: 'include' // Залишаємо, якщо сервер перевіряє куки
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    document.getElementById('user-name').textContent = userData.userName || 'Користувач';
+                    document.getElementById('user-email').textContent = userData.email || 'Немає email';
+                    document.getElementById('auth-buttons').style.display = 'none';
+                    document.getElementById('profile-link').style.display = 'inline-block';
+                    document.getElementById('logout-link').style.display = 'inline-block';
+                    document.getElementById('error-message').style.display = 'none';
+                } else {
+                    document.getElementById('user-name').textContent = 'Гість';
+                    document.getElementById('user-email').textContent = 'Увійдіть до системи';
+                    document.getElementById('auth-buttons').style.display = 'block';
+                    document.getElementById('profile-link').style.display = 'none';
+                    document.getElementById('logout-link').style.display = 'none';
+                    document.getElementById('error-message').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Помилка при отриманні даних користувача:', error);
+                document.getElementById('user-name').textContent = 'Гість';
+                document.getElementById('user-email').textContent = 'Увійдіть до системи';
+                document.getElementById('auth-buttons').style.display = 'block';
+                document.getElementById('profile-link').style.display = 'none';
+                document.getElementById('logout-link').style.display = 'none';
+                document.getElementById('error-message').style.display = 'block';
+            }
+        }
+
+        window.onload = fetchUserData;
+    </script>
+}

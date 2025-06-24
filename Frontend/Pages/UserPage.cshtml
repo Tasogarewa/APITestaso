@@ -1,0 +1,562 @@
+﻿@page
+@model Frontend.Pages.UserPageModel
+@using System.Text.Json
+@using Backend.DTOs
+@using Backend.Models
+@{
+    ViewData["Title"] = "User Page";
+}
+
+
+@functions {
+    public string SafeJsonSerialize(object obj)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+            return json;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Serialization error: {ex.Message}");
+            return "[]";
+        }
+    }
+}
+
+@section Styles {
+    <style>
+        .profile-page *,
+        .profile-page *::before,
+        .profile-page *::after {
+            box-sizing: border-box;
+        }
+
+        .profile-page .profile-page-body {
+            display: flex;
+            flex-direction: column;
+            padding: 0 20px;
+            background: linear-gradient(135deg, #1c2526, #2e3b3e);
+            min-height: 100vh;
+        }
+
+        .profile-page .profile-header {
+            background: url('https://images.unsplash.com/photo-1617791160505-6f00504e3519?q=80&w=1600&auto=format&fit=crop') repeat;
+            background-size: 300px 300px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .profile-page .profile-info {
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+            .profile-page .profile-info img {
+                width: 100px;
+                height: 100px;
+                border-radius: 50%;
+                background: #fff;
+                box-shadow: 0 0 15px rgba(109, 130, 153, 0.5);
+                transition: transform 0.3s ease;
+            }
+
+                .profile-page .profile-info img:hover {
+                    transform: scale(1.1);
+                }
+
+        .profile-page .profile-email {
+            color: #6d8299;
+            font-size: 16px;
+            text-shadow: 0 0 5px rgba(109, 130, 153, 0.5);
+        }
+
+        .profile-page button {
+            padding: 8px 16px;
+            background: #6d8299;
+            color: #1c2526;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+            .profile-page button:hover {
+                background: #536878;
+                transform: scale(1.05);
+                box-shadow: 0 0 15px rgba(109, 130, 153, 0.7);
+            }
+
+        .profile-page .tabs-nav {
+            display: flex;
+            gap: 20px;
+            padding: 10px 0;
+            background: rgba(46, 59, 62, 0.9);
+            border-bottom: 1px solid #536878;
+            flex-shrink: 0;
+            border-radius: 10px;
+        }
+
+            .profile-page .tabs-nav div {
+                cursor: pointer;
+                padding: 10px 20px;
+                color: #6d8299;
+                user-select: none;
+                transition: color 0.3s ease;
+                font-size: 14px;
+                text-transform: uppercase;
+            }
+
+            .profile-page .tabs-nav .active {
+                border-bottom: 3px solid #8aa8c3;
+                color: #8aa8c3;
+                text-shadow: 0 0 5px rgba(138, 168, 195, 0.5);
+            }
+
+        .profile-page .tab-panel {
+            display: none;
+            padding: 20px 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+            .profile-page .tab-panel.active {
+                display: block;
+            }
+
+        .profile-page .data-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .profile-page .data-card {
+            background: rgba(46, 59, 62, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(109, 130, 153, 0.3);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(109, 130, 153, 0.2);
+            cursor: pointer;
+        }
+
+            .profile-page .data-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(109, 130, 153, 0.5);
+            }
+
+        .profile-page .data-card-header {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .profile-page .data-card-header p {
+                margin: 0;
+                color: #6d8299;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .profile-page .data-card-header .toggle-icon::after {
+                content: '▼';
+                color: #6d8299;
+                font-size: 12px;
+                transition: transform 0.3s ease;
+            }
+
+        .profile-page .data-card.active .toggle-icon::after {
+            transform: rotate(180deg);
+        }
+
+        .profile-page .data-card-content {
+            display: none;
+            padding: 15px;
+            border-top: 1px solid rgba(109, 130, 153, 0.2);
+            background: rgba(36, 49, 52, 0.95);
+        }
+
+        .profile-page .data-card.active .data-card-content {
+            display: block;
+        }
+
+        .profile-page .data-card-content p {
+            margin: 5px 0;
+            color: #8aa8c3;
+            font-size: 12px;
+        }
+
+        .profile-page .empty-state {
+            text-align: center;
+            margin-top: 100px;
+            color: #6d8299;
+        }
+
+            .profile-page .empty-state img {
+                height: 100px;
+                margin-bottom: 10px;
+                filter: drop-shadow(0 0 10px rgba(109, 130, 153, 0.5));
+            }
+
+            .profile-page .empty-state h3 {
+                color: #6d8299;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .profile-page .empty-state p {
+                color: #6d8299;
+                font-size: 14px;
+            }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+            .modal.active {
+                display: flex;
+            }
+
+        .modal-content {
+            background: rgba(46, 59, 62, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(109, 130, 153, 0.3);
+            position: relative;
+        }
+
+            .modal-content h2 {
+                color: #8aa8c3;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                margin-top: 0;
+            }
+
+            .modal-content label {
+                color: #6d8299;
+                font-size: 12px;
+                text-transform: uppercase;
+                margin-bottom: 5px;
+                display: block;
+            }
+
+            .modal-content input, .modal-content textarea, .modal-content select {
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 15px;
+                background: rgba(36, 49, 52, 0.95);
+                border: 1px solid rgba(109, 130, 153, 0.2);
+                border-radius: 5px;
+                color: #8aa8c3;
+                font-size: 12px;
+            }
+
+            .modal-content .error-message {
+                color: #ff6b6b;
+                font-size: 12px;
+                margin-bottom: 10px;
+                display: none;
+            }
+
+                .modal-content .error-message.active {
+                    display: block;
+                }
+
+            .modal-content .modal-buttons {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+
+            .modal-content button {
+                padding: 8px 16px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .modal-content .save-button {
+                background: #6d8299;
+                color: #1c2526;
+            }
+
+                .modal-content .save-button:hover {
+                    background: #536878;
+                }
+
+            .modal-content .cancel-button {
+                background: #444;
+                color: #8aa8c3;
+            }
+
+                .modal-content .cancel-button:hover {
+                    background: #333;
+                }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            flex-wrap: wrap;
+        }
+
+            .filter-bar button {
+                padding: 6px 12px;
+                background: #6d8299;
+                color: #1c2526;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                transition: all 0.3s ease;
+            }
+
+                .filter-bar button:hover {
+                    background: #536878;
+                }
+
+                .filter-bar button.active {
+                    background: #8aa8c3;
+                    color: #1c2526;
+                }
+
+        .chart-container {
+            background: rgba(46, 59, 62, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(109, 130, 153, 0.3);
+        }
+
+            .chart-container canvas {
+                max-width: 100%;
+            }
+    </style>
+}
+
+<div class="profile-page">
+    <div class="profile-page-body">
+        <div class="profile-header"></div>
+
+        <div class="profile-info">
+            <img src="https://img.freepik.com/free-vector/flat-design-abstract-portrait-art-style_23-2149123799.jpg" alt="Avatar" />
+            <div>
+                <p class="profile-email">@(Model?.CurrentUser?.Email ?? "No Email")</p>
+                <button id="edit-profile-button">Edit Profile</button>
+            </div>
+        </div>
+
+        <div class="tabs-nav" role="tablist" aria-label="User tabs">
+            <div class="tab-button active" data-tab="apis" role="tab" aria-selected="true" tabindex="0">APIs</div>
+            <div class="tab-button" data-tab="scenarios" role="tab" aria-selected="false" tabindex="-1">Scenarios</div>
+            <div class="tab-button" data-tab="sql" role="tab" aria-selected="false" tabindex="-1">SQL</div>
+            <div class="tab-button" data-tab="results" role="tab" aria-selected="false" tabindex="-1">Test Results</div>
+            <div class="tab-button" data-tab="statistics" role="tab" aria-selected="false" tabindex="-1">Statistics</div>
+        </div>
+
+        <div class="tab-panel active" id="apis" role="tabpanel">
+            @if (Model?.UserApiTests?.Count > 0)
+            {
+                <div class="filter-bar">
+                    <button class="filter-button active" data-filter="name-asc">Name A-Z</button>
+                    <button class="filter-button" data-filter="name-desc">Name Z-A</button>
+                    <button class="filter-button" data-filter="method-get">Method GET</button>
+                    <button class="filter-button" data-filter="method-post">Method POST</button>
+                    <button class="filter-button" data-filter="is-mock-true">Mock True</button>
+                    <button class="filter-button" data-filter="is-mock-false">Mock False</button>
+                    <button class="filter-button" data-filter="reset">Reset</button>
+                </div>
+                <div class="data-container" id="apis-container"></div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712104.png" alt="Empty" />
+                    <h3>No APIs</h3>
+                    <p>APIs you create will show up here.</p>
+                </div>
+            }
+        </div>
+
+        <div class="tab-panel" id="scenarios" role="tabpanel">
+            @if (Model?.UserApiTestScenarios?.Count > 0)
+            {
+                <div class="filter-bar">
+                    <button class="filter-button active" data-filter="name-asc">Name A-Z</button>
+                    <button class="filter-button" data-filter="name-desc">Name Z-A</button>
+                    <button class="filter-button" data-filter="reset">Reset</button>
+                </div>
+                <div class="data-container" id="scenarios-container"></div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712104.png" alt="Empty" />
+                    <h3>No Scenarios</h3>
+                    <p>Create a scenario to get started.</p>
+                </div>
+            }
+        </div>
+
+        <div class="tab-panel" id="sql" role="tabpanel">
+            @if (Model?.UserSqlTests?.Count > 0)
+            {
+                <div class="filter-bar">
+                    <button class="filter-button active" data-filter="name-asc">Name A-Z</button>
+                    <button class="filter-button" data-filter="name-desc">Name Z-A</button>
+                    <button class="filter-button" data-filter="type-scalar">Scalar</button>
+                    <button class="filter-button" data-filter="type-resultset">ResultSet</button>
+                    <button class="filter-button" data-filter="type-schema">Schema</button>
+                    <button class="filter-button" data-filter="reset">Reset</button>
+                </div>
+                <div class="data-container" id="sql-container"></div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712104.png" alt="Empty" />
+                    <h3>No SQL Tests</h3>
+                    <p>SQL you create will show up here.</p>
+                </div>
+            }
+        </div>
+
+        <div class="tab-panel" id="results" role="tabpanel">
+            @if (Model?.UserTestResults?.Count > 0)
+            {
+                <div class="filter-bar">
+                    <button class="filter-button active" data-filter="date-desc">Newest First</button>
+                    <button class="filter-button" data-filter="date-asc">Oldest First</button>
+                    <button class="filter-button" data-filter="success-true">Success</button>
+                    <button class="filter-button" data-filter="success-false">Failure</button>
+                    <button class="filter-button" data-filter="reset">Reset</button>
+                    <button id="export-results-button">Export Results</button>
+                </div>
+                <div class="data-container" id="results-container"></div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712104.png" alt="Empty" />
+                    <h3>No Test Results</h3>
+                    <p>Test results will show up here.</p>
+                </div>
+            }
+        </div>
+
+        <div class="tab-panel" id="statistics" role="tabpanel">
+            <div id="statistics-container">
+                <div class="chart-container">
+                    <canvas id="pie-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="bar-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="line-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Editing Profile -->
+    <div class="modal" id="edit-profile-modal">
+        <div class="modal-content">
+            <h2>Edit Profile</h2>
+            <div class="error-message" id="profile-error"></div>
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Enter your email" />
+            <label for="username">Full Name</label>
+            <input type="text" id="username" placeholder="Enter your full name" />
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" placeholder="Enter your phone number" />
+            <label for="connection-string">Database Connection String</label>
+            <textarea id="connection-string" placeholder="Enter your database connection string"></textarea>
+            <div class="modal-buttons">
+                <button class="cancel-button" id="cancel-profile-button">Cancel</button>
+                <button class="save-button" id="save-profile-button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="export-modal">
+        <div class="modal-content">
+            <h2>Export Test Results</h2>
+            <div class="error-message" id="export-error"></div>
+            <label for="export-format">Select Format</label>
+            <select id="export-format">
+                <option value="">-- Select Format --</option>
+                <option value="json">JSON</option>
+                <option value="xml">XML</option>
+                <option value="csv">CSV</option>
+            </select>
+            <div class="modal-buttons">
+                <button class="cancel-button" id="cancel-export-button">Cancel</button>
+                <button class="save-button" id="export-confirm-button">Export</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="~/js/userPage.js"></script>
+    <script>
+        try {
+            window.apiTests = @Html.Raw(SafeJsonSerialize(Model?.UserApiTests ?? new List<ApiTestDto>()));
+            window.scenarios = @Html.Raw(SafeJsonSerialize(Model?.UserApiTestScenarios ?? new List<ApiTestScenarioDto>()));
+            window.sqlTests = @Html.Raw(SafeJsonSerialize(Model?.UserSqlTests ?? new List<SqlTestDto>()));
+            window.testResults = @Html.Raw(SafeJsonSerialize(Model?.UserTestResults ?? new List<TestResultDto>()));
+            window.currentUserId = '@(Model?.CurrentUser?.Id ?? "")';
+            console.log('apiTests:', window.apiTests);
+            console.log('scenarios:', window.scenarios);
+            console.log('sqlTests:', window.sqlTests);
+            console.log('testResults:', window.testResults);
+            console.log('currentUserId:', window.currentUserId);
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const activeTab = document.querySelector('.tab-button.active');
+                if (activeTab) {
+                    const tabId = activeTab.dataset.tab;
+                    if (tabId !== 'statistics') {
+                        renderTab(tabId, currentFilters[tabId]);
+                    }
+                }
+            });
+        } catch (e) {
+            console.error('Error initializing variables:', e);
+        }
+    </script>
+}

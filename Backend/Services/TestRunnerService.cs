@@ -3,9 +3,12 @@ using Backend.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Web;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Backend.Services
 {
@@ -15,13 +18,16 @@ namespace Backend.Services
         public readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly TestComparisonService _testComparison;
 
         public TestRunnerService(
             ApplicationDbContext dbContext,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            TestComparisonService testComparison)
         {
+            _testComparison = testComparison;
             _dbContext = dbContext;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -32,6 +38,7 @@ namespace Backend.Services
         {
             var state = new Dictionary<string, string>();
             var results = new List<TestResult>();
+            string error;
 
             foreach (var step in scenario.Tests)
             {
@@ -48,6 +55,20 @@ namespace Backend.Services
                     await MeasureExecutionTimeAsync(testResult, async () =>
                     {
                         string url = ReplaceTokens(step.Url, state);
+
+                        
+                        if (step.QueryParameters != null && step.QueryParameters.Any())
+                        {
+                            var uriBuilder = new UriBuilder(url);
+                            var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+                            foreach (var param in step.QueryParameters)
+                            {
+                                string paramValue = ReplaceTokens(param.Value, state);
+                                query[param.Key] = paramValue;
+                            }
+                            uriBuilder.Query = query.ToString();
+                            url = uriBuilder.ToString();
+                        }
 
                         HttpContent? content = null;
                         if (step.BodyJson != null)
@@ -74,12 +95,14 @@ namespace Backend.Services
                         string responseBody = await response.Content.ReadAsStringAsync();
 
                         testResult.Response = $"Status: {statusCode}\nBody:\n{responseBody}";
+                        string expectedResponseWithReplacements = ReplaceTokens(step.ExpectedResponse ?? "", state);
+                        testResult.IsSuccess = _testComparison.CompareApiTest(expectedResponseWithReplacements, testResult.Response, step.ExpectedStatusCode, (int)response.StatusCode, out error);
 
-                        if (statusCode != step.ExpectedStatusCode)
-                            throw new Exception($"Expected status {step.ExpectedStatusCode}, got {statusCode}");
-
-                        if (!string.IsNullOrEmpty(step.ExpectedResponse) && responseBody != step.ExpectedResponse)
-                            throw new Exception("Response body check failed.");
+                        if (!testResult.IsSuccess)
+                        {
+                            testResult.ErrorMessage = error;
+                            throw new Exception(error);
+                        }
 
                         if (step.Save != null)
                         {
@@ -105,7 +128,6 @@ namespace Backend.Services
                 results.Add(testResult);
                 _dbContext.TestResults.Add(testResult);
             }
-            
 
             await _dbContext.SaveChangesAsync();
             return results;
@@ -145,8 +167,11 @@ namespace Backend.Services
             return results;
         }
 
-        public async Task<TestResult> ExecuteApiTestAsync(ApiTest test, string userId)
+
+public async Task<TestResult> ExecuteApiTestAsync(ApiTest test, string userId)
         {
+            var state = new Dictionary<string, string>();
+            string error;
             var result = new TestResult
             {
                 ApiTestId = test.Id,
@@ -154,9 +179,25 @@ namespace Backend.Services
                 ExecutedAt = DateTime.UtcNow
             };
 
+           
             string finalUrl = test.IsMock
                 ? $"{_configuration["MockServer:PostmanMockBaseUrl"]?.TrimEnd('/')}/{test.Url.Replace("https://localhost:7200", "").TrimStart('/')}"
                 : test.Url;
+
+           
+            if (test.QueryParameters != null && test.QueryParameters.Any())
+            {
+                var uriBuilder = new UriBuilder(finalUrl);
+                var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+                foreach (var param in test.QueryParameters)
+                {
+                   
+                    string paramValue = ReplaceTokens(param.Value, state);
+                    query[param.Key] = paramValue;
+                }
+                uriBuilder.Query = query.ToString();
+                finalUrl = uriBuilder.ToString();
+            }
 
             try
             {
@@ -169,41 +210,71 @@ namespace Backend.Services
                         ? new StringContent(JsonSerializer.Serialize(test.BodyJson), Encoding.UTF8, "application/json")
                         : null;
 
+                    
+                    using var cts = new CancellationTokenSource();
+                    if (test.TimeoutSeconds.HasValue && test.TimeoutSeconds > 0)
+                        cts.CancelAfter(TimeSpan.FromSeconds(test.TimeoutSeconds.Value));
+
                     HttpResponseMessage response = test.Method.ToUpper() switch
                     {
-                        "GET" => await client.GetAsync(finalUrl),
-                        "POST" => await client.PostAsync(finalUrl, requestBody ?? new StringContent("")),
-                        "PUT" => await client.PutAsync(finalUrl, requestBody ?? new StringContent("")),
-                        "DELETE" => await client.DeleteAsync(finalUrl),
+                        "GET" => await client.GetAsync(finalUrl, cts.Token),
+                        "POST" => await client.PostAsync(finalUrl, requestBody ?? new StringContent(""), cts.Token),
+                        "PUT" => await client.PutAsync(finalUrl, requestBody ?? new StringContent(""), cts.Token),
+                        "DELETE" => await client.DeleteAsync(finalUrl, cts.Token),
                         _ => throw new InvalidOperationException($"Unsupported HTTP method: {test.Method}")
                     };
 
                     string respBody = await response.Content.ReadAsStringAsync();
                     result.Response = respBody;
 
-                    result.IsSuccess =
-                        (int)response.StatusCode == test.ExpectedStatusCode &&
-                        (string.IsNullOrEmpty(test.ExpectedResponse) || respBody.Contains(test.ExpectedResponse));
+                    if (test.Save != null && test.Save.Any())
+                    {
+                        foreach (var kvp in test.Save)
+                        {
+                            try
+                            {
+                                var val = ExtractJsonValue(respBody, kvp.Value);
+                                state[kvp.Key] = val;
+                            }
+                            catch
+                            {
+                                
+                            }
+                        }
+                    }
+
+                    string expectedResponseWithReplacements = ReplaceTokens(test.ExpectedResponse ?? "", state);
+
+                    result.IsSuccess = _testComparison.CompareApiTest(expectedResponseWithReplacements, result.Response, test.ExpectedStatusCode, (int)response.StatusCode, out error);
 
                     if (!result.IsSuccess)
-                        result.ErrorMessage = $"Expected status: {test.ExpectedStatusCode}, got: {(int)response.StatusCode}";
+                        result.ErrorMessage = error;
                 });
+            }
+            catch (TaskCanceledException)
+            {
+                result.IsSuccess = false;
+                result.ErrorMessage = $"Test '{test.Name}' timed out.";
             }
             catch (Exception ex)
             {
                 result.IsSuccess = false;
                 result.ErrorMessage = ex.Message;
-              
             }
+
+            if (result.IsSuccess)
+                result.ErrorMessage = "Тест пройшов успішно";
+
             _dbContext.TestResults.Add(result);
             await _dbContext.SaveChangesAsync();
+
             return result;
         }
 
         public async Task<TestResult> RunSingleSqlTestAsync(SqlTest test, string userId)
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            var cs = user?.DatabaseConnectionString;
+          
+            var cs = test.DatabaseConnectionName;
 
             if (string.IsNullOrEmpty(cs))
             {
@@ -211,7 +282,7 @@ namespace Backend.Services
                 {
                     SqlTestId = test.Id,
                     IsSuccess = false,
-                    ErrorMessage = "User has not set a database connection string.",
+                    ErrorMessage = "SQL test has no database connection string specified.",
                     ExecutedByUserId = userId,
                     ExecutedAt = DateTime.UtcNow
                 };
@@ -223,6 +294,7 @@ namespace Backend.Services
                 await conn.OpenAsync();
                 using var cmd = new SqlCommand(test.SqlQuery, conn);
 
+                
                 if (!string.IsNullOrEmpty(test.ParametersJson))
                 {
                     var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(test.ParametersJson)!;
@@ -299,10 +371,9 @@ namespace Backend.Services
                     SqlTestId = test.Id,
                     ExecutedByUserId = userId,
                     IsSuccess = false,
-                    ErrorMessage = ex.Message,
+                    ErrorMessage = $"{ex.Message}\nStackTrace: {ex.StackTrace}",
                     ExecutedAt = DateTime.UtcNow
                 };
-
                 _dbContext.TestResults.Add(failResult);
                 await _dbContext.SaveChangesAsync();
                 return failResult;

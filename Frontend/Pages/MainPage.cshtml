@@ -1,0 +1,2515 @@
+﻿@page
+@model Frontend.Pages.MainPageModel
+@using Backend.Models
+@using Backend.DTOs
+@{
+    var backendBaseUrl = "https://localhost:7200";
+}
+@section Styles {
+    <style>
+        .main-page *,
+        .main-page *::before,
+        .main-page *::after {
+            box-sizing: border-box;
+        }
+
+        .main-page {
+            display: flex;
+            height: 100vh;
+            background: #0f0f0f;
+            color: #c0c0c0;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            margin: 10px;
+            border: 1px solid #222;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .main-sidebar {
+            width: 250px;
+            background: #1a1a1a;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            transition: background 0.3s ease;
+        }
+
+            .main-sidebar:hover {
+                background: #222222;
+            }
+
+        .main-sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #333;
+            background: #151515;
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            background: #2a2a2a;
+            border-right: 1px solid #333;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+            .sidebar-tab.active {
+                background: #1e90ff;
+                color: #fff;
+                font-weight: bold;
+            }
+
+            .sidebar-tab:hover {
+                background: #333;
+                color: #1e90ff;
+            }
+
+        .sidebar-content {
+            display: none;
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+            .sidebar-content.active {
+                display: block;
+            }
+
+        .dropdown-test {
+            margin-bottom: 10px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #222;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+            .dropdown-test:hover {
+                border-color: #1e90ff;
+                box-shadow: 0 0 10px rgba(30, 144, 255, 0.2);
+            }
+
+        .dropdown-header {
+            padding: 10px;
+            background: #2d2d2d;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+            .dropdown-header:hover {
+                background: #333;
+            }
+
+        .dropdown-body {
+            display: none;
+            padding: 10px;
+            background: #1e1e1e;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .dropdown-test.open .dropdown-body {
+            display: block;
+        }
+
+        .main-options-icon::after {
+            content: '⋮';
+            font-size: 18px;
+            cursor: pointer;
+            color: #888;
+            transition: color 0.2s;
+        }
+
+        .main-options-icon:hover::after {
+            color: #1e90ff;
+        }
+
+        .main-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #121212;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .main-content-tab {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+            .main-content-tab.active {
+                display: flex;
+            }
+
+        .main-request-tabs {
+            display: flex;
+            border-bottom: 1px solid #333;
+            background: #1a1a1a;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .main-request-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background: #2d2d2d;
+            border-right: 1px solid #333;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+            .main-request-tab.active {
+                background: #1e90ff;
+                color: #fff;
+            }
+
+            .main-request-tab:hover {
+                background: #333;
+            }
+
+            .main-request-tab .close-btn {
+                margin-left: 8px;
+                cursor: pointer;
+                color: #888;
+            }
+
+                .main-request-tab .close-btn:hover {
+                    color: #ff5555;
+                }
+
+        .main-request-contents,
+        .main-sql-contents,
+        .main-scenario-contents {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #1a1a1a;
+        }
+
+        .main-request-content {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+            .main-request-content[style*="display: block"] {
+                display: block;
+            }
+
+        .main-request-bar {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #252525;
+            border-bottom: 1px solid #333;
+        }
+
+            .main-request-bar select,
+            .main-request-bar input,
+            .main-request-bar button {
+                margin-right: 10px;
+                border: 1px solid #444;
+                border-radius: 4px;
+                background: #2d2d2d;
+                color: #c0c0c0;
+                padding: 6px 10px;
+                font-family: inherit;
+            }
+
+            .main-request-bar button {
+                background: #1e90ff;
+                color: #fff;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+                .main-request-bar button:hover {
+                    background: #0066cc;
+                }
+
+        .main-tabs {
+            display: flex;
+            border-bottom: 1px solid #333;
+            background: #151515;
+        }
+
+        .main-tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background: #2a2a2a;
+            border-right: 1px solid #333;
+            transition: background 0.2s;
+        }
+
+            .main-tab.active {
+                background: #1e90ff;
+                color: #fff;
+            }
+
+            .main-tab:hover {
+                background: #333;
+            }
+
+        .main-tab-content {
+            display: none;
+            padding: 15px;
+            background: #1e1e1e;
+            overflow-y: auto;
+        }
+
+            .main-tab-content[style*="display: block"] {
+                display: block;
+            }
+
+        .main-form-container {
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+            .main-form-container label {
+                display: block;
+                margin: 12px 0 6px;
+                color: #a0a0a0;
+                font-weight: bold;
+            }
+
+            .main-form-container input,
+            .main-form-container select {
+                width: 100%;
+                padding: 8px;
+                background: #2d2d2d;
+                color: #c0c0c0;
+                border: 1px solid #444;
+                border-radius: 4px;
+                font-family: 'Fira Code', monospace;
+            }
+
+            .main-form-container textarea {
+                display: none;
+            }
+
+            .main-form-container .code-input {
+                width: 100%;
+                min-height: 100px;
+                padding: 10px;
+                background: #1e1e1e;
+                color: #d4d4d4;
+                border: 1px solid #444;
+                border-radius: 4px;
+                font-family: 'Fira Code', monospace;
+                resize: vertical;
+                overflow-y: auto;
+                white-space: pre;
+                tab-size: 4;
+                outline: none;
+            }
+
+            .main-form-container button {
+                margin-top: 12px;
+                padding: 8px 15px;
+                background: #1e90ff;
+                color: #fff;
+                border: none;
+                cursor: pointer;
+                border-radius: 4px;
+                transition: background 0.2s;
+            }
+
+                .main-form-container button:hover {
+                    background: #0066cc;
+                }
+
+        .main-auth-section {
+            display: flex;
+            gap: 20px;
+        }
+
+        .main-auth-section-left,
+        .main-auth-section-right {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .main-radio-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+
+        .main-radio-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #a0a0a0;
+        }
+
+        .main-response-container {
+            padding: 15px;
+            background: #252525;
+            border-top: 1px solid #333;
+            overflow: hidden;
+        }
+
+        .main-response-content {
+            background: #1e1e1e;
+            padding: 12px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre;
+            font-family: 'Fira Code', monospace;
+            color: #d4d4d4;
+            position: relative;
+        }
+
+            .main-response-content .meta-info {
+                font-size: 12px;
+                color: #888;
+                margin-top: 8px;
+            }
+
+        .context-menu {
+            display: none;
+            position: absolute;
+            background: #252525;
+            border: 1px solid #444;
+            border-radius: 6px;
+            z-index: 1000;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+            .context-menu div {
+                padding: 10px 15px;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+                .context-menu div:hover {
+                    background: #1e90ff;
+                    color: #fff;
+                }
+
+        .json-body {
+            white-space: pre-wrap;
+            font-family: 'Fira Code', monospace;
+            background: #2d2d2d;
+            padding: 8px;
+            border-radius: 4px;
+            display: inline-block;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #2d2d2d;
+        }
+
+        th, td {
+            border: 1px solid #444;
+            padding: 8px;
+            color: #c0c0c0;
+        }
+
+        th {
+            background: #333;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"], input[type="number"] {
+            background: #2d2d2d;
+            color: #c0c0c0;
+            border: 1px solid #444;
+            padding: 6px;
+            width: 100%;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .test-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 4px;
+        }
+
+        .test-item {
+            padding: 10px;
+            cursor: pointer;
+            background: #2d2d2d;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+            .test-item:hover {
+                background: #1e90ff;
+                color: #fff;
+            }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            color: #c0c0c0;
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+            .modal-content h3 {
+                margin-top: 0;
+                color: #1e90ff;
+                text-align: center;
+            }
+
+            .modal-content label {
+                display: block;
+                margin: 12px 0 6px;
+                color: #a0a0a0;
+            }
+
+            .modal-content input,
+            .modal-content select {
+                width: 100%;
+                padding: 8px;
+                background: #2d2d2d;
+                color: #c0c0c0;
+                border: 1px solid #444;
+                border-radius: 4px;
+                font-family: 'Fira Code', monospace;
+            }
+
+            .modal-content button {
+                margin-top: 15px;
+                padding: 8px 15px;
+                background: #1e90ff;
+                color: #fff;
+                border: none;
+                cursor: pointer;
+                border-radius: 4px;
+                transition: background 0.2s;
+            }
+
+                .modal-content button:hover {
+                    background: #0066cc;
+                }
+
+            .modal-content .close-modal {
+                background: #ff5555;
+            }
+
+                .modal-content .close-modal:hover {
+                    background: #cc0000;
+                }
+    </style>
+}
+@if (!string.IsNullOrEmpty(Model.LoadErrorMessage))
+{
+    <div style="color: red; padding: 16px;">
+        @Model.LoadErrorMessage
+    </div>
+}
+@if (!string.IsNullOrEmpty(Model.ApiResponse))
+{
+    <div style="color: #ff5555; padding: 16px;">
+        @Model.ApiResponse
+    </div>
+}
+<div class="main-page">
+    <div class="main-container">
+        <div class="main-sidebar">
+            <div class="main-sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="api" onclick="switchSidebarTab('api', event)">API</button>
+                <button class="sidebar-tab" data-tab="sql" onclick="switchSidebarTab('sql', event)">Query</button>
+                <button class="sidebar-tab" data-tab="scenarios" onclick="switchSidebarTab('scenarios', event)">Scenarios</button>
+            </div>
+            <div class="sidebar-content active" id="tab-api"></div>
+            <div class="sidebar-content" id="tab-sql"></div>
+            <div class="sidebar-content" id="tab-scenarios"></div>
+        </div>
+        <div class="main-main">
+            <div class="main-content">
+                <div class="main-content-tab active" id="content-api">
+                    <div class="main-request-tabs">
+                        <div class="main-request-tab" id="add-api-test-btn">+ Новий API тест</div>
+                    </div>
+                    <div class="main-request-contents"></div>
+                </div>
+                <div class="main-content-tab" id="content-sql">
+                    <div class="main-request-tabs" id="sql-tabs">
+                        <div class="main-request-tab" id="add-sql-test-btn">+ Новий SQL тест</div>
+                    </div>
+                    <div class="main-sql-contents"></div>
+                    <div class="main-response-container">
+                        <div class="main-response-content" id="sql-response" contenteditable="true">Результат з’явиться тут</div>
+                        <div class="meta-info" id="sql-response-meta"></div>
+                    </div>
+                </div>
+                <div class="main-content-tab" id="content-scenarios">
+                    <div class="main-request-tabs" id="scenario-tabs">
+                        <div class="main-request-tab" id="add-scenario-btn">+ Новий сценарій</div>
+                    </div>
+                    <div class="main-scenario-contents"></div>
+                    <div class="main-response-container">
+                        <div class="main-response-content" id="scenario-response" contenteditable="true">Результат з’явиться тут</div>
+                        <div class="meta-info" id="scenario-response-meta"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="context-menu" id="context-menu"></div>
+    <div id="schedule-modal" class="modal">
+        <div class="modal-content">
+            <h3>Запланувати сценарій</h3>
+            <form id="schedule-form">
+                <input type="hidden" id="schedule-scenario-id">
+                <label for="schedule-start-time">Час початку</label>
+                <input type="datetime-local" id="schedule-start-time" required>
+                <label for="schedule-cron">Cron вираз</label>
+                <input type="text" id="schedule-cron" placeholder="0 0 * * *" required>
+                <button type="button" onclick="confirmSchedule()">Запланувати</button>
+                <button type="button" class="close-modal" onclick="closeModal()">Закрити</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let tabCounter = 1;
+    let sqlTabCounter = 1;
+    let scenarioTabCounter = 1;
+    let currentContextMenuTarget = null;
+    const backendBaseUrl = "https://localhost:7200";
+    let currentRequestId = null;
+    let currentSqlRequestId = null;
+    let currentScenarioId = null;
+    let isNewRequest = false;
+    let initialRequestStates = {};
+    let initialSqlStates = {};
+    let initialScenarioStates = {};
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        return parts.length === 2 ? parts.pop().split(';').shift() : null;
+    }
+
+    function getUserIdFromToken() {
+        const token = getCookie('AccessToken');
+        if (!token) return null;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.sub || null;
+        } catch {
+            return null;
+        }
+    }
+
+    function switchSidebarTab(tab, event) {
+        document.querySelectorAll('.sidebar-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.main-content-tab').forEach(c => c.classList.remove('active'));
+
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        event.target.classList.add('active');
+        document.getElementById(`content-${tab}`).classList.add('active');
+    }
+
+    function toggleTestDropdown(element) {
+        const parent = element.closest('.dropdown-test');
+        document.querySelectorAll('.dropdown-test').forEach(dropdown => {
+            if (dropdown !== parent) dropdown.classList.remove('open');
+        });
+        parent.classList.toggle('open');
+    }
+
+    function showContextMenu(event, id, type, target) {
+        event.preventDefault();
+        event.stopPropagation();
+        currentContextMenuTarget = target;
+        const menu = document.getElementById('context-menu');
+        let menuItems = `
+            <div onclick="handleMenuAction(${id}, 'edit', '${type}')">Оновити</div>
+            <div onclick="handleMenuAction(${id}, 'delete', '${type}')">Видалити</div>
+        `;
+        if (type === 'scenario') {
+            menuItems += `
+                <div onclick="handleMenuAction(${id}, 'schedule', 'scenario')">Запланувати</div>
+                <div onclick="handleMenuAction(${id}, 'cancelSchedule', 'scenario')">Зняти з планування</div>
+            `;
+        }
+        menu.innerHTML = menuItems;
+        const sidebar = document.querySelector('.main-sidebar');
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const scrollTop = sidebar.scrollTop;
+        let x = targetRect.left - sidebarRect.left + 5;
+        let y = targetRect.bottom - sidebarRect.top - scrollTop + 2;
+        const menuWidth = menu.offsetWidth || 120;
+        const menuHeight = menu.offsetHeight || 80;
+        x = Math.max(5, Math.min(x, 245 - menuWidth));
+        y = Math.max(5, Math.min(y, sidebarRect.height - menuHeight - 5));
+        menu.style.left = `${sidebarRect.left + x}px`;
+        menu.style.top = `${sidebarRect.top + y}px`;
+        menu.style.display = 'block';
+        document.addEventListener('click', hideContextMenu, { once: true });
+    }
+
+    function hideContextMenu() {
+        document.getElementById('context-menu').style.display = 'none';
+        currentContextMenuTarget = null;
+    }
+
+    function handleMenuAction(id, action, type) {
+        hideContextMenu();
+        if (action === 'edit') {
+            loadTest(id, type);
+        } else if (action === 'delete') {
+            deleteTest(id, type);
+        } else if (action === 'schedule' && type === 'scenario') {
+            scheduleScenario(id);
+        } else if (action === 'cancelSchedule' && type === 'scenario') {
+            cancelSchedule(id);
+        }
+    }
+
+    function loadTest(id, type) {
+        const endpoint = type === 'api' ? `/api/ApiTests/${id}` : type === 'sql' ? `/api/SqlTests/${id}` : `/api/ApiTestScenarios/${id}`;
+        return fetch(`${backendBaseUrl}${endpoint}`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (type === 'sql') {
+                updateOrCreateSqlRequestTab(data);
+            } else if (type === 'api') {
+                updateOrCreateRequestTab(data);
+            } else if (type === 'scenario') {
+                updateOrCreateScenarioTab(data);
+            }
+        });
+    }
+
+    function deleteTest(id, type) {
+        if (!confirm('Ви впевнені, що хочете видалити цей тест?')) return;
+        const endpoint = type === 'api' ? `/api/ApiTests/${id}` : type === 'sql' ? `/api/SqlTests/${id}` : `/api/ApiTestScenarios/${id}`;
+        fetch(`${backendBaseUrl}${endpoint}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                document.querySelector(`.dropdown-test[data-id="${id}"]`)?.remove();
+                if (type === 'api') {
+                    const tab = document.querySelector(`.main-request-tab[data-request][data-id="${id}"]`);
+                    if (tab) closeTab(tab.dataset.request, { stopPropagation: () => {} });
+                } else if (type === 'sql') {
+                    const tab = document.querySelector(`.main-request-tab[data-sql-request][data-id="${id}"]`);
+                    if (tab) closeSqlTab(tab.dataset.sqlRequest, { stopPropagation: () => {} });
+                } else if (type === 'scenario') {
+                    const tab = document.querySelector(`.main-request-tab[data-scenario-request][data-id="${id}"]`);
+                    if (tab) closeScenarioTab(tab.dataset.scenarioRequest, { stopPropagation: () => {} });
+                }
+            } else {
+                return response.text().then(text => { throw new Error(text); });
+            }
+        });
+    }
+
+    function saveSqlTest(sqlRequestId) {
+         const content = document.getElementById(`sql-request-${sqlRequestId}`);
+         const id = parseInt(content.querySelector(`#sql-test-id-${sqlRequestId}`)?.value) || 0;
+         const testTypeMap = { "Scalar": 0, "ResultSet": 1, "Schema": 2 };
+         const parametersFormat = document.querySelector(`input[name="parameters-format-${sqlRequestId}"]:checked`)?.value;
+         let parametersJson = '{}';
+         if (parametersFormat === 'json') {
+             parametersJson = document.getElementById(`sql-test-parameters-json-${sqlRequestId}`)?.textContent || '{}';
+             if (!isValidJson(parametersJson)) {
+                 alert('Невалідний JSON у параметрах.');
+                 return;
+             }
+         } else {
+             const parametersTable = document.querySelector(`#parameters-table-${sqlRequestId}`);
+             const params = {};
+             if (parametersTable) {
+                 parametersTable.querySelectorAll('tr').forEach(row => {
+                     const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                     const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                     if (key) params[key] = value;
+                 });
+                 parametersJson = Object.keys(params).length > 0 ? JSON.stringify(params) : '{}';
+             }
+         }
+
+         const data = {
+             id: id,
+             name: document.getElementById(`sql-test-name-${sqlRequestId}`)?.value || 'Default Name',
+             sqlQuery: document.getElementById(`sql-test-query-${sqlRequestId}`)?.textContent || 'SELECT 1',
+             testType: testTypeMap[document.getElementById(`sql-test-type-${sqlRequestId}`)?.value] || 0,
+             expectedJson: document.getElementById(`sql-test-expected-json-${sqlRequestId}`)?.textContent || null,
+             parametersJson: parametersJson,
+             databaseConnectionName: document.getElementById(`sql-test-connection-${sqlRequestId}`)?.value || 'DefaultConnection',
+             createdByUserId: getUserIdFromToken() || null
+         };
+
+         if (!data.name || !data.sqlQuery || !data.createdByUserId || !data.databaseConnectionName) {
+             alert('Заповніть усі обов’язкові поля: Назва тесту, SQL Запит, Підключення до бази даних.');
+             return;
+         }
+         if (data.parametersJson && !isValidJson(data.parametersJson)) {
+             alert('Невалідний JSON у параметрах.');
+             return;
+         }
+
+         fetch(`${backendBaseUrl}/api/SqlTests${id ? `/${id}` : ''}`, {
+             method: id ? 'PUT' : 'POST',
+             headers: {
+                 'Content-Type': 'application/json',
+                 'Authorization': `Bearer ${getCookie('AccessToken')}`
+             },
+             body: JSON.stringify(data)
+         })
+         .then(response => {
+             if (!response.ok) return response.text().then(text => { throw new Error(text); });
+             return response.status === 204 ? { id: id } : response.json();
+         })
+         .then(result => {
+             if (id === 0) {
+                 content.querySelector(`#sql-test-id-${sqlRequestId}`).value = result.id;
+                 data.id = result.id;
+             }
+             // Оновлюємо вкладку та бічну панель
+             updateOrCreateSqlRequestTab(data);
+             updateSqlSidebar(data, id === 0);
+             // Зберігаємо початковий стан для коректного порівняння
+             storeInitialSqlState(sqlRequestId);
+             // Оновлюємо кнопку після збереження
+             updateSqlSendButton(sqlRequestId);
+         })
+         .catch(error => {
+             console.error('Error saving SQL test:', error);
+             alert('Помилка збереження тесту: ' + (error.message || 'Невідома помилка'));
+         });
+     }
+    function saveScenario(scenarioRequestId) {
+        const content = document.getElementById(`scenario-request-${scenarioRequestId}`);
+        const id = parseInt(content.querySelector(`#scenario-id-${scenarioRequestId}`)?.value) || 0;
+        const testList = document.getElementById(`scenario-test-list-${scenarioRequestId}`);
+        const testIds = Array.from(testList.querySelectorAll('.test-item')).map(item => parseInt(item.dataset.testId)).filter(id => !isNaN(id));
+
+        const data = {
+            id: id,
+            scenarioName: document.getElementById(`scenario-name-${scenarioRequestId}`)?.value || "Default Scenario",
+            testIds: testIds,
+            createdByUserId: getUserIdFromToken() || null
+        };
+
+        if (!data.scenarioName || !data.createdByUserId || data.testIds.length === 0) return;
+
+        fetch(`${backendBaseUrl}/api/ApiTestScenarios${id ? `/${id}` : ''}`, {
+            method: id ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) return response.text().then(text => { throw new Error(text); });
+            return response.status === 204 ? { id: id } : response.json();
+        })
+        .then(result => {
+            const content = document.getElementById(`scenario-request-${scenarioRequestId}`);
+            const scenarioId = parseInt(content.querySelector(`#scenario-id-${scenarioRequestId}`)?.value) || 0;
+            if (scenarioId === 0) {
+                content.querySelector(`#scenario-id-${scenarioRequestId}`).value = result.id;
+                updateScenarioSidebar({ ...data, id: result.id }, true);
+                updateScenarioSendButton(scenarioRequestId);
+            } else {
+                updateScenarioSidebar(data, false);
+                storeInitialScenarioState(scenarioRequestId);
+            }
+        });
+    }
+
+    function isValidJson(str) {
+        try {
+            JSON.parse(str);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    function updateSqlSidebar(data, isNew) {
+        const sidebar = document.getElementById('tab-sql');
+        const existing = sidebar.querySelector(`.dropdown-test[data-id="${data.id}"]`);
+        if (existing && !isNew) {
+            existing.remove();
+        } else if (existing) {
+            return;
+        }
+        const testElement = document.createElement('div');
+        testElement.className = 'dropdown-test';
+        testElement.dataset.type = 'sql';
+        testElement.dataset.id = data.id;
+        testElement.dataset.name = data.name;
+        testElement.dataset.query = data.sqlQuery;
+        testElement.dataset.testType = Object.keys({ Scalar: 0, ResultSet: 1, Schema: 2 })[data.testType] || 'Scalar';
+        testElement.dataset.expectedJson = data.expectedJson || '';
+        testElement.dataset.parametersJson = data.parametersJson || '';
+        testElement.dataset.databaseConnection = data.databaseConnectionName;
+        testElement.innerHTML = `
+            <div class="dropdown-header" onclick="toggleTestDropdown(this); selectTest(this, 'sql')">
+                <span>${testElement.dataset.testType} ${data.name}</span>
+                <span class="main-options-icon" onclick="showContextMenu(event, ${data.id}, 'sql', this)"></span>
+            </div>
+            <div class="dropdown-body">
+                <p><strong>Тип:</strong> ${testElement.dataset.testType}</p>
+                <p><strong>Запит:</strong> ${data.sqlQuery}</p>
+                <p><strong>Очікуваний результат:</strong> <span class="json-body">${data.expectedJson || 'Немає'}</span></p>
+                <p><strong>Параметри:</strong> <span class="json-body">${data.parametersJson || 'Немає'}</span></p>
+                <p><strong>Підключення:</strong> ${data.databaseConnectionName}</p>
+            </div>
+        `;
+        sidebar.appendChild(testElement);
+    }
+
+    function updateScenarioSidebar(data, isNew) {
+        const sidebar = document.getElementById('tab-scenarios');
+        const existing = sidebar.querySelector(`.dropdown-test[data-id="${data.id}"]`);
+        if (existing && !isNew) {
+            existing.remove();
+        } else if (existing) {
+            return;
+        }
+        const testElement = document.createElement('div');
+        testElement.className = 'dropdown-test';
+        testElement.dataset.type = 'scenario';
+        testElement.dataset.id = data.id;
+        testElement.dataset.name = data.scenarioName;
+        testElement.dataset.testIds = JSON.stringify(data.testIds);
+        testElement.innerHTML = `
+            <div class="dropdown-header" onclick="toggleTestDropdown(this); selectTest(this, 'scenario')">
+                <span>${data.scenarioName}</span>
+                <span class="main-options-icon" onclick="showContextMenu(event, ${data.id}, 'scenario', this)"></span>
+            </div>
+            <div class="dropdown-body">
+                <p><strong>Назва:</strong> ${data.scenarioName}</p>
+                <p><strong>Тести:</strong> <span id="scenario-tests-${data.id}"></span></p>
+            </div>
+        `;
+        fetchTestNames(data.testIds).then(testNames => {
+            const testsSpan = testElement.querySelector(`#scenario-tests-${data.id}`);
+            if (testsSpan) {
+                testsSpan.textContent = testNames.length > 0 ? testNames.join(', ') : 'Немає тестів';
+            }
+        });
+        sidebar.appendChild(testElement);
+    }
+
+    function clearSqlForm(sqlRequestId) {
+        const form = document.getElementById(`sql-test-form-${sqlRequestId}`);
+        form.reset();
+        document.getElementById(`sql-test-connection-${sqlRequestId}`).value = 'DefaultConnection';
+        document.getElementById(`sql-test-query-${sqlRequestId}`).textContent = '';
+        document.getElementById(`sql-test-expected-json-${sqlRequestId}`).textContent = '';
+        document.getElementById(`sql-test-parameters-json-${sqlRequestId}`).textContent = '';
+        document.getElementById(`sql-response`).textContent = 'Результат з’явиться тут';
+        document.getElementById(`sql-response-meta`).textContent = '';
+        storeInitialSqlState(sqlRequestId);
+        updateSqlSendButton(sqlRequestId);
+    }
+
+    function clearScenarioForm(scenarioRequestId) {
+        const form = document.getElementById(`scenario-form-${scenarioRequestId}`);
+        form.reset();
+        document.getElementById(`scenario-test-list-${scenarioRequestId}`).innerHTML = '';
+        document.getElementById(`scenario-response`).textContent = 'Результат з’явиться тут';
+        document.getElementById(`scenario-response-meta`).textContent = '';
+        storeInitialScenarioState(scenarioRequestId);
+        updateScenarioSendButton(scenarioRequestId);
+    }
+
+    function addNewApiTest() {
+        isNewRequest = true;
+        const requestData = {
+            type: 'api',
+            id: 0,
+            name: `Новий запит ${tabCounter}`,
+            method: 'POST',
+            url: '',
+            headers: [],
+            params: [],
+            body: '',
+            expectedResponse: '',
+            expectedStatusCode: 200,
+            isMock: false,
+            timeoutSeconds: '',
+            save: []
+        };
+        createNewRequestTab(requestData);
+        updateSendButton(currentRequestId);
+    }
+
+         async function addNewSqlTest() {
+        const sqlRequestId = `sql-test-${sqlTabCounter++}`;
+        const tabName = `Новий SQL тест ${sqlRequestId.split('-')[2]}`;
+        const tab = document.createElement('div');
+        tab.className = 'main-request-tab active';
+        tab.dataset.sqlRequest = sqlRequestId;
+        tab.dataset.id = 0; // Новий тест, ID = 0
+        tab.innerHTML = `<span class="tab-label">${tabName}</span><span class="indicator"></span><span class="close-btn" onclick="closeSqlTab('${sqlRequestId}', event)">×</span>`;
+        tab.querySelector('.tab-label').onclick = () => showSqlRequest(sqlRequestId);
+        const tabsContainer = document.getElementById('sql-tabs');
+        const addTabButton = tabsContainer.querySelector('.main-request-tab:last-child');
+        tabsContainer.insertBefore(tab, addTabButton);
+
+        const content = document.createElement('div');
+        content.className = 'main-request-content';
+        content.id = `sql-request-${sqlRequestId}`;
+        content.style.display = 'block';
+        content.innerHTML = await generateSqlContent(sqlRequestId);
+        document.querySelector('.main-sql-contents').appendChild(content);
+
+        // Ініціалізація форми порожніми даними
+        const nameInput = document.getElementById(`sql-test-name-${sqlRequestId}`);
+        const queryDiv = document.getElementById(`sql-test-query-${sqlRequestId}`);
+        const testTypeSelect = document.getElementById(`sql-test-type-${sqlRequestId}`);
+        const expectedJsonDiv = document.getElementById(`sql-test-expected-json-${sqlRequestId}`);
+        const parametersJsonDiv = document.getElementById(`sql-test-parameters-json-${sqlRequestId}`);
+        const connectionInput = document.getElementById(`sql-test-connection-${sqlRequestId}`);
+
+        if (nameInput) nameInput.value = tabName;
+        if (queryDiv) queryDiv.textContent = '';
+        if (testTypeSelect) testTypeSelect.value = 'Scalar';
+        if (expectedJsonDiv) expectedJsonDiv.textContent = '';
+        if (parametersJsonDiv) parametersJsonDiv.textContent = '{}';
+        if (connectionInput) {
+            const userConnectionString = await fetchUserConnectionString();
+            connectionInput.value = userConnectionString || 'DefaultConnection';
+        }
+
+        showSqlRequest(sqlRequestId);
+        setupSqlFormListeners(sqlRequestId);
+        storeInitialSqlState(sqlRequestId);
+        currentSqlRequestId = sqlRequestId;
+        const sendBtn = document.getElementById(`sql-send-btn-${sqlRequestId}`);
+        sendBtn.textContent = 'Зберегти';
+        sendBtn.onclick = () => saveSqlTest(sqlRequestId);
+        updateSqlSendButton(sqlRequestId);
+    }
+
+    function addNewScenario() {
+        const scenarioRequestId = `scenario-${scenarioTabCounter++}`;
+        const tabName = `Новий сценарій ${scenarioRequestId.split('-')[1]}`;
+        const tab = document.createElement('div');
+        tab.className = 'main-request-tab active';
+        tab.dataset.scenarioRequest = scenarioRequestId;
+        tab.innerHTML = `<span class="tab-label">${tabName}</span><span class="indicator"></span><span class="close-btn" onclick="closeScenarioTab('${scenarioRequestId}', event)">×</span>`;
+        tab.querySelector('.tab-label').onclick = () => showScenario(scenarioRequestId);
+        const tabsContainer = document.getElementById('scenario-tabs');
+        const addTabButton = tabsContainer.querySelector('.main-request-tab:last-child');
+        tabsContainer.insertBefore(tab, addTabButton);
+        const content = document.createElement('div');
+        content.className = 'main-request-content';
+        content.id = `scenario-request-${scenarioRequestId}`;
+        content.style.display = 'block';
+        content.innerHTML = generateScenarioContent(scenarioRequestId);
+        document.querySelector('.main-scenario-contents').appendChild(content);
+        showScenario(scenarioRequestId);
+        setupScenarioFormListeners(scenarioRequestId);
+        storeInitialScenarioState(scenarioRequestId);
+        currentScenarioId = scenarioRequestId;
+        const sendBtn = document.getElementById(`scenario-send-btn-${scenarioRequestId}`);
+        sendBtn.textContent = 'Зберегти';
+        sendBtn.onclick = () => saveScenario(scenarioRequestId);
+        updateScenarioSendButton(currentScenarioId);
+    }
+
+            async function generateSqlContent(sqlRequestId) {
+        return `
+            <div class="main-form-container">
+                <h3>SQL Тест</h3>
+                <form id="sql-test-form-${sqlRequestId}">
+                    <input type="hidden" id="sql-test-id-${sqlRequestId}">
+                    <label for="sql-test-name-${sqlRequestId}">Назва тесту</label>
+                    <input type="text" id="sql-test-name-${sqlRequestId}" required>
+                    <label for="sql-test-query-${sqlRequestId}">SQL Запит</label>
+                    <div class="code-input" id="sql-test-query-${sqlRequestId}" contenteditable="true"></div>
+                    <label for="sql-test-type-${sqlRequestId}">Тип тесту</label>
+                    <select id="sql-test-type-${sqlRequestId}" required>
+                        <option value="Scalar">Scalar</option>
+                        <option value="ResultSet">ResultSet</option>
+                        <option value="Schema">Schema</option>
+                    </select>
+                    <label for="sql-test-expected-json-${sqlRequestId}">Очікуваний результат (JSON)</label>
+                    <div class="code-input" id="sql-test-expected-json-${sqlRequestId}" contenteditable="true"></div>
+                    <label>Формат параметрів</label>
+                    <div class="main-radio-group">
+                        <label class="main-radio-label"><input type="radio" name="parameters-format-${sqlRequestId}" value="json" checked onchange="toggleParametersFormat('${sqlRequestId}')"> JSON</label>
+                        <label class="main-radio-label"><input type="radio" name="parameters-format-${sqlRequestId}" value="table" onchange="toggleParametersFormat('${sqlRequestId}')"> Таблиця</label>
+                    </div>
+                    <div id="parameters-json-container-${sqlRequestId}" style="display: block">
+                        <label for="sql-test-parameters-json-${sqlRequestId}">Параметри (JSON)</label>
+                        <div class="code-input" id="sql-test-parameters-json-${sqlRequestId}" contenteditable="true"></div>
+                    </div>
+                    <div id="parameters-table-container-${sqlRequestId}" style="display: none">
+                        <label>Параметри (Таблиця)</label>
+                        <table id="parameters-table-${sqlRequestId}">
+                            <thead><tr><th>Ключ</th><th>Значення</th><th></th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <button type="button" onclick="addRow('parameters-table-${sqlRequestId}', null, '${sqlRequestId}')">Додати параметр</button>
+                    </div>
+                    <label for="sql-test-connection-${sqlRequestId}">Підключення до бази даних</label>
+                    <input type="text" id="sql-test-connection-${sqlRequestId}" required>
+                    <button type="button" id="sql-send-btn-${sqlRequestId}"></button>
+                    <button type="button" onclick="clearSqlForm('${sqlRequestId}')">Очистити</button>
+                </form>
+            </div>
+        `;
+    }
+
+    function generateScenarioContent(scenarioRequestId) {
+        return `
+            <div class="main-form-container">
+                <h3>Сценарій</h3>
+                <form id="scenario-form-${scenarioRequestId}">
+                    <input type="hidden" id="scenario-id-${scenarioRequestId}">
+                    <label for="scenario-name-${scenarioRequestId}">Назва сценарію</label>
+                    <input type="text" id="scenario-name-${scenarioRequestId}" required>
+                    <label>Тести</label>
+                    <div class="test-list" id="scenario-test-list-${scenarioRequestId}"></div>
+                    <button type="button" onclick="openTestSelector('${scenarioRequestId}')">Додати тест</button>
+                    <button type="button" id="scenario-send-btn-${scenarioRequestId}"></button>
+                    <button type="button" onclick="clearScenarioForm('${scenarioRequestId}')">Очистити</button>
+                </form>
+            </div>
+        `;
+    }
+
+             function generateRequestContent(requestId, data) {
+        const bodyJson = data.body ? (typeof data.body === 'string' ? data.body : JSON.stringify(data.body, null, 2)) : '';
+        const expectedResponseJson = data.expectedResponse ? (typeof data.expectedResponse === 'string' ? data.expectedResponse : JSON.stringify(data.expectedResponse, null, 2)) : '';
+        const bodyTableRows = data.body && typeof data.body === 'object' && !Array.isArray(data.body) ? Object.entries(data.body).map(([key, value]) => `
+            <tr>
+                <td><input type="text" value="${key}"></td>
+                <td><input type="text" value="${value}"></td>
+                <td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td>
+            </tr>`) : '';
+        const expectedResponseTableRows = data.expectedResponse && typeof data.expectedResponse === 'object' && !Array.isArray(data.expectedResponse) ? Object.entries(data.expectedResponse).map(([key, value]) => `
+            <tr>
+                <td><input type="text" value="${key}"></td>
+                <td><input type="text" value="${value}"></td>
+                <td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td>
+            </tr>`) : '';
+        const headers = Array.isArray(data.headers) ? data.headers : [];
+        const queryParameters = Array.isArray(data.queryParameters) ? data.queryParameters : Object.entries(data.queryParameters || {}).map(([key, value]) => ({ key, value }));
+        const save = Array.isArray(data.save) ? data.save : [];
+
+        return `
+            <div class="main-request-bar">
+                <select id="method-${requestId}">
+                    <option value="GET" ${data.method === 'GET' ? 'selected' : ''}>GET</option>
+                    <option value="POST" ${data.method === 'POST' ? 'selected' : ''}>POST</option>
+                    <option value="PUT" ${data.method === 'PUT' ? 'selected' : ''}>PUT</option>
+                    <option value="DELETE" ${data.method === 'DELETE' ? 'selected' : ''}>DELETE</option>
+                </select>
+                <input type="text" id="url-${requestId}" value="${data.url || ''}" placeholder="Enter URL">
+                <button id="save-btn-${requestId}"></button>
+            </div>
+            <div class="main-form-container">
+                <input type="hidden" id="test-id-${requestId}" value="${data.id || ''}">
+                <label for="test-name-${requestId}">Назва тесту</label>
+                <input type="text" id="test-name-${requestId}" value="${data.name || ''}" required>
+                <label>Query-параметри</label>
+                <table id="params-table-${requestId}">
+                    <thead><tr><th>Ключ</th><th>Значення</th><th></th></tr></thead>
+                    <tbody>${queryParameters.map(p => `<tr><td><input type="text" value="${p.key || ''}"></td><td><input type="text" value="${p.value || ''}"></td><td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td></tr>`).join('')}</tbody>
+                </table>
+                <button type="button" onclick="addRow('params-table-${requestId}', '${requestId}')">Додати query-параметр</button>
+                <label>Заголовки</label>
+                <table id="headers-table-${requestId}">
+                    <thead><tr><th>Ключ</th><th>Значення</th><th></th></tr></thead>
+                    <tbody>${headers.map(h => `<tr><td><input type="text" value="${h.key || ''}"></td><td><input type="text" value="${h.value || ''}"></td><td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td></tr>`).join('')}</tbody>
+                </table>
+                <button type="button" onclick="addRow('headers-table-${requestId}', '${requestId}')">Додати заголовок</button>
+                <label>Формат тіла запиту</label>
+                <div class="main-radio-group">
+                    <label class="main-radio-label"><input type="radio" name="body-format-${requestId}" value="json" ${!data.body || typeof data.body === 'string' ? 'checked' : ''} onchange="toggleBodyFormat('${requestId}')"> JSON</label>
+                    <label class="main-radio-label"><input type="radio" name="body-format-${requestId}" value="table" ${data.body && typeof data.body === 'object' ? 'checked' : ''} onchange="toggleBodyFormat('${requestId}')"> Таблиця</label>
+                </div>
+                <div id="body-json-container-${requestId}" style="display: ${!data.body || typeof data.body === 'string' ? 'block' : 'none'}">
+                    <label for="body-${requestId}">Тіло запиту (JSON)</label>
+                    <div class="code-input" id="body-${requestId}" contenteditable="true">${bodyJson}</div>
+                </div>
+                <div id="body-table-container-${requestId}" style="display: ${data.body && typeof data.body === 'object' ? 'block' : 'none'}">
+                    <label>Тіло запиту (Таблиця)</label>
+                    <table id="body-table-${requestId}">
+                        <thead><tr><th>Ключ</th><th>Значення</th><th></th></tr></thead>
+                        <tbody>${bodyTableRows}</tbody>
+                    </table>
+                    <button type="button" onclick="addRow('body-table-${requestId}', '${requestId}')">Додати поле</button>
+                </div>
+                <label>Формат очікуваної відповіді</label>
+                <div class="main-radio-group">
+                    <label class="main-radio-label"><input type="radio" name="expected-response-format-${requestId}" value="json" ${!data.expectedResponse || typeof data.expectedResponse === 'string' ? 'checked' : ''} onchange="toggleExpectedResponseFormat('${requestId}')"> JSON</label>
+                    <label class="main-radio-label"><input type="radio" name="expected-response-format-${requestId}" value="table" ${data.expectedResponse && typeof data.expectedResponse === 'object' ? 'checked' : ''} onchange="toggleExpectedResponseFormat('${requestId}')"> Таблиця</label>
+                </div>
+                <div id="expected-response-json-container-${requestId}" style="display: ${!data.expectedResponse || typeof data.expectedResponse === 'string' ? 'block' : 'none'}">
+                    <label for="expected-response-${requestId}">Очікувана відповідь (JSON)</label>
+                    <div class="code-input" id="expected-response-${requestId}" contenteditable="true">${expectedResponseJson}</div>
+                </div>
+                <div id="expected-response-table-container-${requestId}" style="display: ${data.expectedResponse && typeof data.expectedResponse === 'object' ? 'block' : 'none'}">
+                    <label>Очікувана відповідь (Таблиця)</label>
+                    <table id="expected-response-table-${requestId}">
+                        <thead><tr><th>Ключ</th><th>Значення</th><th></th></tr></thead>
+                        <tbody>${expectedResponseTableRows}</tbody>
+                    </table>
+                    <button type="button" onclick="addRow('expected-response-table-${requestId}', '${requestId}')">Додати поле</button>
+                </div>
+                <label for="expected-status-code-${requestId}">Очікуваний код статусу</label>
+                <input type="number" id="expected-status-code-${requestId}" value="${data.expectedStatusCode || 200}">
+                <label for="is-mock-${requestId}">Мок</label>
+                <input type="checkbox" id="is-mock-${requestId}" ${data.isMock ? 'checked' : ''}>
+                <label for="timeout-seconds-${requestId}">Таймаут (секунди)</label>
+                <input type="number" id="timeout-seconds-${requestId}" value="${data.timeoutSeconds || ''}">
+                <label>Збереження</label>
+                <table id="save-table-${requestId}">
+                    <thead><tr><th>Ключ</th><th>Значення</th><th></th></tr></thead>
+                    <tbody>${save.map(s => `<tr><td><input type="text" value="${s.key || ''}"></td><td><input type="text" value="${s.value || ''}"></td><td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td></tr>`).join('')}</tbody>
+                </table>
+                <button type="button" onclick="addRow('save-table-${requestId}', '${requestId}')">Додати збереження</button>
+            </div>
+            <div class="main-response-container">
+                <div class="main-response-content" id="response-${requestId}" contenteditable="true">Результат з’явиться тут</div>
+                <div class="meta-info" id="response-meta-${requestId}"></div>
+            </div>
+        `;
+    }
+
+    function addRow(tableId, requestId, sqlRequestId) {
+        const table = document.getElementById(tableId);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="text"></td>
+            <td><input type="text"></td>
+            <td><button type="button" onclick="this.parentElement.parentElement.remove(); ${requestId ? `updateSendButton('${requestId}')` : `updateSqlSendButton('${sqlRequestId}')`}">-</button></td>
+        `;
+        table.querySelector('tbody').appendChild(row);
+        if (requestId) updateSendButton(requestId);
+        if (sqlRequestId) updateSqlSendButton(sqlRequestId);
+    }
+
+          function populateRequestForm(requestId, data) {
+        document.getElementById(`method-${requestId}`).value = data.method || 'GET';
+        document.getElementById(`url-${requestId}`).value = data.url || '';
+        document.getElementById(`test-id-${requestId}`).value = data.id || '';
+        document.getElementById(`test-name-${requestId}`).value = data.name || '';
+        document.getElementById(`expected-status-code-${requestId}`).value = data.expectedStatusCode || 200;
+        document.getElementById(`is-mock-${requestId}`).checked = data.isMock || false;
+        document.getElementById(`timeout-seconds-${requestId}`).value = data.timeoutSeconds || '';
+
+        // Body
+        const bodyFormat = document.querySelector(`input[name="body-format-${requestId}"][value="json"]`);
+        const bodyJsonContainer = document.getElementById(`body-json-container-${requestId}`);
+        const bodyTableContainer = document.getElementById(`body-table-container-${requestId}`);
+        if (data.body && typeof data.body === 'object' && !Array.isArray(data.body)) {
+            bodyFormat.checked = false;
+            document.querySelector(`input[name="body-format-${requestId}"][value="table"]`).checked = true;
+            bodyJsonContainer.style.display = 'none';
+            bodyTableContainer.style.display = 'block';
+            const bodyTable = document.getElementById(`body-table-${requestId}`).querySelector('tbody');
+            bodyTable.innerHTML = Object.entries(data.body).map(([key, value]) => `
+                <tr><td><input type="text" value="${key}"></td><td><input type="text" value="${value}"></td><td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td></tr>`).join('');
+        } else {
+            bodyFormat.checked = true;
+            document.querySelector(`input[name="body-format-${requestId}"][value="table"]`).checked = false;
+            bodyJsonContainer.style.display = 'block';
+            bodyTableContainer.style.display = 'none';
+            document.getElementById(`body-${requestId}`).textContent = data.body ? (typeof data.body === 'string' ? data.body : JSON.stringify(data.body, null, 2)) : '';
+        }
+
+        // Expected Response
+        const expectedResponseFormat = document.querySelector(`input[name="expected-response-format-${requestId}"][value="json"]`);
+        const expectedResponseJsonContainer = document.getElementById(`expected-response-json-container-${requestId}`);
+        const expectedResponseTableContainer = document.getElementById(`expected-response-table-container-${requestId}`);
+        if (data.expectedResponse && typeof data.expectedResponse === 'object' && !Array.isArray(data.expectedResponse)) {
+            expectedResponseFormat.checked = false;
+            document.querySelector(`input[name="expected-response-format-${requestId}"][value="table"]`).checked = true;
+            expectedResponseJsonContainer.style.display = 'none';
+            expectedResponseTableContainer.style.display = 'block';
+            const expectedResponseTable = document.getElementById(`expected-response-table-${requestId}`).querySelector('tbody');
+            expectedResponseTable.innerHTML = Object.entries(data.expectedResponse).map(([key, value]) => `
+                <tr><td><input type="text" value="${key}"></td><td><input type="text" value="${value}"></td><td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td></tr>`).join('');
+        } else {
+            expectedResponseFormat.checked = true;
+            document.querySelector(`input[name="expected-response-format-${requestId}"][value="table"]`).checked = false;
+            expectedResponseJsonContainer.style.display = 'block';
+            expectedResponseTableContainer.style.display = 'none';
+            document.getElementById(`expected-response-${requestId}`).textContent = data.expectedResponse ? (typeof data.expectedResponse === 'string' ? data.expectedResponse : JSON.stringify(data.expectedResponse, null, 2)) : '';
+        }
+
+        // Headers
+        const headersTable = document.getElementById(`headers-table-${requestId}`).querySelector('tbody');
+        headersTable.innerHTML = '';
+        (Array.isArray(data.headers) ? data.headers : Object.entries(data.headers || {}).map(([key, value]) => ({ key, value }))).forEach(h => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="${h.key || ''}"></td>
+                <td><input type="text" value="${h.value || ''}"></td>
+                <td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td>
+            `;
+            headersTable.appendChild(row);
+        });
+
+        // Query Parameters
+        const paramsTable = document.getElementById(`params-table-${requestId}`).querySelector('tbody');
+        paramsTable.innerHTML = '';
+        (Array.isArray(data.queryParameters) ? data.queryParameters : Object.entries(data.queryParameters || {}).map(([k, v]) => ({ key: k, value: v }))).forEach(p => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="${p.key || ''}"></td>
+                <td><input type="text" value="${p.value || ''}"></td>
+                <td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td>
+            `;
+            paramsTable.appendChild(row);
+        });
+
+        // Save
+        const saveTable = document.getElementById(`save-table-${requestId}`).querySelector('tbody');
+        saveTable.innerHTML = '';
+        (Array.isArray(data.save) ? data.save : Object.entries(data.save || {}).map(([key, value]) => ({ key, value }))).forEach(s => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" value="${s.key || ''}"></td>
+                <td><input type="text" value="${s.value || ''}"></td>
+                <td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSendButton('${requestId}')">-</button></td>
+            `;
+            saveTable.appendChild(row);
+        });
+    }
+
+    function openTestSelector(scenarioRequestId) {
+        const testList = document.getElementById(`scenario-test-list-${scenarioRequestId}`);
+        const existingTestIds = Array.from(testList.querySelectorAll('.test-item')).map(item => parseInt(item.dataset.testId));
+        fetch(`${backendBaseUrl}/api/ApiTests`, {
+            headers: {
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => response.json())
+        .then(tests => {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>Вибрати тести</h3>
+                    <div class="test-list" id="test-selector-list"></div>
+                    <button type="button" onclick="this.closest('.modal').remove()">Закрити</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const selectorList = modal.querySelector('#test-selector-list');
+            tests.forEach(test => {
+                if (!existingTestIds.includes(test.id)) {
+                    const item = document.createElement('div');
+                    item.className = 'test-item';
+                    item.dataset.testId = test.id;
+                    item.textContent = `${test.method} ${test.name}`;
+                    item.onclick = () => addTestToScenario(scenarioRequestId, test.id, `${test.method} ${test.name}`);
+                    selectorList.appendChild(item);
+                }
+            });
+        });
+    }
+
+    function addTestToScenario(scenarioRequestId, testId, testName) {
+        const testList = document.getElementById(`scenario-test-list-${scenarioRequestId}`);
+        const testItem = document.createElement('div');
+        testItem.className = 'test-item';
+        testItem.dataset.testId = testId;
+        testItem.innerHTML = `${testName} <span onclick="removeTestFromScenario(this, '${scenarioRequestId}')" style="cursor: pointer; color: #d9534f;">×</span>`;
+        testList.appendChild(testItem);
+        updateScenarioSendButton(scenarioRequestId);
+    }
+
+    function removeTestFromScenario(element, scenarioRequestId) {
+        element.parentElement.remove();
+        updateScenarioSendButton(scenarioRequestId);
+    }
+
+    function confirmSchedule() {
+        const scenarioId = document.getElementById('schedule-scenario-id').value;
+        const startTime = document.getElementById('schedule-start-time').value;
+        const cronExpression = document.getElementById('schedule-cron').value;
+        const userId = getUserIdFromToken();
+
+        if (!scenarioId || !startTime || !cronExpression || !userId) return;
+
+        const scheduleData = {
+            scenarioId: scenarioId,
+            userId: userId,
+            startTime: new Date(startTime).toISOString(),
+            cronExpression: cronExpression
+        };
+
+        fetch(`${backendBaseUrl}/api/Scheduler/schedule`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            },
+            body: JSON.stringify(scheduleData)
+        })
+        .then(response => {
+            if (!response.ok) return response.text().then(text => { throw new Error(text); });
+            closeModal();
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('schedule-modal').style.display = 'none';
+        document.getElementById('schedule-form').reset();
+    }
+
+    function scheduleScenario(id) {
+        document.getElementById('schedule-scenario-id').value = id;
+        document.getElementById('schedule-modal').style.display = 'flex';
+    }
+
+    function cancelSchedule(scenarioId) {
+        const userId = getUserIdFromToken();
+        fetch(`${backendBaseUrl}/api/Scheduler/cancel?scenarioId=${scenarioId}&userId=${userId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) return response.text().then(text => { throw new Error(text); });
+        });
+    }
+
+    function showSqlRequest(sqlRequestId) {
+        document.querySelectorAll('#content-sql .main-request-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.main-sql-contents .main-request-content').forEach(content => content.style.display = 'none');
+        const tab = document.querySelector(`#content-sql .main-request-tab[data-sql-request="${sqlRequestId}"]`);
+        const content = document.getElementById(`sql-request-${sqlRequestId}`);
+        if (tab) tab.classList.add('active');
+        if (content) content.style.display = 'block';
+        currentSqlRequestId = sqlRequestId;
+        updateSqlSendButton(sqlRequestId);
+    }
+
+    function showScenario(scenarioRequestId) {
+        document.querySelectorAll('#content-scenarios .main-request-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.main-scenario-contents .main-request-content').forEach(content => content.style.display = 'none');
+        const tab = document.querySelector(`#content-scenarios .main-request-tab[data-scenario-request="${scenarioRequestId}"]`);
+        const content = document.getElementById(`scenario-request-${scenarioRequestId}`);
+        if (tab) tab.classList.add('active');
+        if (content) content.style.display = 'block';
+        currentScenarioId = scenarioRequestId;
+        updateScenarioSendButton(scenarioRequestId);
+    }
+
+    function closeSqlTab(sqlRequestId, event) {
+        event.stopPropagation();
+        const tab = document.querySelector(`.main-request-tab[data-sql-request="${sqlRequestId}"]`);
+        const content = document.getElementById(`sql-request-${sqlRequestId}`);
+        const wasActive = tab.classList.contains('active');
+        if (tab) tab.remove();
+        if (content) content.remove();
+        delete initialSqlStates[sqlRequestId];
+        if (wasActive) {
+            const tabs = document.querySelectorAll('#content-sql .main-request-tab:not(:last-child)');
+            if (tabs.length > 0) {
+                showSqlRequest(tabs[tabs.length - 1].dataset.sqlRequest);
+            }
+        }
+    }
+
+    function closeScenarioTab(scenarioRequestId, event) {
+        event.stopPropagation();
+        const tab = document.querySelector(`.main-request-tab[data-scenario-request="${scenarioRequestId}"]`);
+        const content = document.getElementById(`scenario-request-${scenarioRequestId}`);
+        const wasActive = tab.classList.contains('active');
+        if (tab) tab.remove();
+        if (content) content.remove();
+        delete initialScenarioStates[scenarioRequestId];
+        if (wasActive) {
+            const tabs = document.querySelectorAll('#content-scenarios .main-request-tab:not(:last-child)');
+            if (tabs.length > 0) {
+                showScenario(tabs[tabs.length - 1].dataset.scenarioRequest);
+            }
+        }
+    }
+
+    function setupFormListeners(requestId) {
+        const inputs = document.querySelectorAll(`#request-${requestId} input, #request-${requestId} select, #request-${requestId} .code-input`);
+        inputs.forEach(input => {
+            input.addEventListener('input', () => updateSendButton(requestId));
+        });
+        document.querySelectorAll(`#params-table-${requestId} button, #headers-table-${requestId} button, #save-table-${requestId} button, #body-table-${requestId} button, #expected-response-table-${requestId} button`).forEach(btn => {
+            btn.addEventListener('click', () => updateSendButton(requestId));
+        });
+        document.querySelectorAll(`input[name="body-format-${requestId}"], input[name="expected-response-format-${requestId}"]`).forEach(radio => {
+            radio.addEventListener('change', () => updateSendButton(requestId));
+        });
+    }
+
+    function setupSqlFormListeners(sqlRequestId) {
+        const inputs = document.querySelectorAll(`#sql-test-form-${sqlRequestId} input, #sql-test-form-${sqlRequestId} .code-input, #sql-test-form-${sqlRequestId} select`);
+        inputs.forEach(input => {
+            input.addEventListener('input', () => updateSqlSendButton(sqlRequestId));
+        });
+        document.querySelectorAll(`#parameters-table-${sqlRequestId} button`).forEach(btn => {
+            btn.addEventListener('click', () => updateSqlSendButton(sqlRequestId));
+        });
+        document.querySelectorAll(`input[name="parameters-format-${sqlRequestId}"]`).forEach(radio => {
+            radio.addEventListener('change', () => updateSqlSendButton(sqlRequestId));
+        });
+    }
+
+    function setupScenarioFormListeners(scenarioFormId) {
+        const inputs = document.querySelectorAll(`#scenario-form-${scenarioFormId} input`);
+        inputs.forEach(input => {
+            input.addEventListener('input', () => updateScenarioSendButton(scenarioFormId));
+        });
+    }
+
+    function storeInitialSqlState(sqlRequestId) {
+        const content = document.getElementById(`sql-request-${sqlRequestId}`);
+        if (!content) return;
+        const name = document.getElementById(`sql-test-name-${sqlRequestId}`)?.value || '';
+        const query = document.getElementById(`sql-test-query-${sqlRequestId}`)?.textContent || '';
+        const testType = document.getElementById(`sql-test-type-${sqlRequestId}`)?.value || '';
+        const expectedJson = document.getElementById(`sql-test-expected-json-${sqlRequestId}`)?.textContent || '';
+        const parametersFormat = document.querySelector(`input[name="parameters-format-${sqlRequestId}"]:checked`)?.value || 'json';
+        let parametersJson = '';
+        if (parametersFormat === 'json') {
+            parametersJson = document.getElementById(`sql-test-parameters-json-${sqlRequestId}`)?.textContent || '';
+        } else {
+            const parametersTable = document.querySelector(`#parameters-table-${sqlRequestId}`);
+            const params = {};
+            if (parametersTable) {
+                parametersTable.querySelectorAll('tr').forEach(row => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) params[key] = value;
+                });
+                parametersJson = JSON.stringify(params);
+            }
+        }
+        const databaseConnection = document.getElementById(`sql-test-connection-${sqlRequestId}`)?.value || '';
+        initialSqlStates[sqlRequestId] = {
+            name,
+            query,
+            testType,
+            expectedJson,
+            parametersJson,
+            parametersFormat,
+            databaseConnection
+        };
+    }
+
+    function storeInitialScenarioState(scenarioRequestId) {
+        const content = document.getElementById(`scenario-request-${scenarioRequestId}`);
+        if (!content) return;
+        const name = document.getElementById(`scenario-name-${scenarioRequestId}`)?.value || '';
+        const testList = document.getElementById(`scenario-test-list-${scenarioRequestId}`);
+        const testIds = Array.from(testList.querySelectorAll('.test-item')).map(item => parseInt(item.dataset.testId)).filter(id => !isNaN(id));
+        initialScenarioStates[scenarioRequestId] = {
+            name,
+            testIds: testIds.sort((a, b) => a - b).join(',')
+        };
+    }
+
+    function hasSqlChanges(sqlRequestId) {
+        const content = document.getElementById(`sql-request-${sqlRequestId}`);
+        if (!content) return false;
+        const initialState = initialSqlStates[sqlRequestId] || {};
+        const currentName = document.getElementById(`sql-test-name-${sqlRequestId}`)?.value || '';
+        const currentQuery = document.getElementById(`sql-test-query-${sqlRequestId}`)?.textContent || '';
+        const currentTestType = document.getElementById(`sql-test-type-${sqlRequestId}`)?.value || '';
+        const currentExpectedJson = document.getElementById(`sql-test-expected-json-${sqlRequestId}`)?.textContent || '';
+        const currentParametersFormat = document.querySelector(`input[name="parameters-format-${sqlRequestId}"]:checked`)?.value || 'json';
+        let currentParametersJson = '';
+        if (currentParametersFormat === 'json') {
+            currentParametersJson = document.getElementById(`sql-test-parameters-json-${sqlRequestId}`)?.textContent || '';
+        } else {
+            const parametersTable = document.querySelector(`#parameters-table-${sqlRequestId}`);
+            const params = {};
+            if (parametersTable) {
+                parametersTable.querySelectorAll('tr').forEach(row => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) params[key] = value;
+                });
+                currentParametersJson = JSON.stringify(params);
+            }
+        }
+        const currentDatabaseConnection = document.getElementById(`sql-test-connection-${sqlRequestId}`)?.value || '';
+        return initialState.name !== currentName ||
+               initialState.query !== currentQuery ||
+               initialState.testType !== currentTestType ||
+               initialState.expectedJson !== currentExpectedJson ||
+               initialState.parametersJson !== currentParametersJson ||
+               initialState.parametersFormat !== currentParametersFormat ||
+               initialState.databaseConnection !== currentDatabaseConnection;
+    }
+
+    function hasScenarioChanges(scenarioRequestId) {
+        const content = document.getElementById(`scenario-request-${scenarioRequestId}`);
+        if (!content) return false;
+        const initialState = initialScenarioStates[scenarioRequestId] || {};
+        const currentName = document.getElementById(`scenario-name-${scenarioRequestId}`)?.value || '';
+        const testList = document.getElementById(`scenario-test-list-${scenarioRequestId}`);
+        const currentTestIds = Array.from(testList.querySelectorAll('.test-item')).map(item => parseInt(item.dataset.testId)).filter(id => !isNaN(id));
+        return initialState.name !== currentName ||
+               initialState.testIds !== currentTestIds.sort((a, b) => a - b).join(',');
+    }
+
+    function updateSqlSendButton(sqlRequestId) {
+        const sendBtn = document.getElementById(`sql-send-btn-${sqlRequestId}`);
+        const content = document.getElementById(`sql-request-${sqlRequestId}`);
+        if (!sendBtn || !content) return;
+        const testId = parseInt(content.querySelector(`#sql-test-id-${sqlRequestId}`)?.value) || 0;
+
+        if (testId === 0) {
+            sendBtn.textContent = 'Зберегти';
+            sendBtn.onclick = () => saveSqlTest(sqlRequestId);
+        } else {
+            if (hasSqlChanges(sqlRequestId)) {
+                sendBtn.textContent = 'Оновити';
+                sendBtn.onclick = () => saveSqlTest(sqlRequestId);
+            } else {
+                sendBtn.textContent = 'SEND';
+                sendBtn.onclick = () => runSqlTest(sqlRequestId);
+            }
+        }
+    }
+
+    function updateScenarioSendButton(scenarioRequestId) {
+        const sendBtn = document.getElementById(`scenario-send-btn-${scenarioRequestId}`);
+        const content = document.getElementById(`scenario-request-${scenarioRequestId}`);
+        if (!sendBtn || !content) return;
+        const scenarioId = parseInt(content.querySelector(`#scenario-id-${scenarioRequestId}`)?.value) || 0;
+
+        if (scenarioId === 0 || hasScenarioChanges(scenarioRequestId)) {
+            sendBtn.textContent = scenarioId === 0 ? 'Зберегти' : 'Оновити';
+            sendBtn.onclick = () => saveScenario(scenarioRequestId);
+        } else {
+            sendBtn.textContent = 'Run';
+            sendBtn.onclick = () => runScenario(scenarioId);
+        }
+    }
+
+    function runSqlTest(sqlRequestId) {
+        const content = document.getElementById(`sql-request-${sqlRequestId}`);
+        const testId = parseInt(content.querySelector(`#sql-test-id-${sqlRequestId}`)?.value) || null;
+        if (!testId) return;
+        const responseDiv = document.getElementById('sql-response');
+        const metaDiv = document.getElementById('sql-response-meta');
+        responseDiv.textContent = 'Виконується...';
+        metaDiv.textContent = '';
+        const startTime = performance.now();
+        fetch(`${backendBaseUrl}/api/TestRunner/RunSqlTest/${testId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => {
+            const duration = performance.now() - startTime;
+            const meta = `Status: ${response.status}, Time: ${duration.toFixed(2)}ms`;
+            metaDiv.textContent = meta;
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(result => {
+            responseDiv.textContent = JSON.stringify(result, null, 2);
+        })
+        .catch(() => {
+            responseDiv.textContent = 'Помилка виконання';
+        });
+    }
+
+    function runScenario(scenarioId) {
+        const responseDiv = document.getElementById('scenario-response');
+        const metaDiv = document.getElementById('scenario-response-meta');
+        responseDiv.textContent = 'Виконується...';
+        metaDiv.textContent = '';
+        const startTime = performance.now();
+        fetch(`${backendBaseUrl}/api/TestRunner/RunApiScenarioById/${scenarioId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getCookie('AccessToken')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => {
+            const duration = performance.now() - startTime;
+            const meta = `Status: ${response.status}, Time: ${duration.toFixed(2)}ms`;
+            metaDiv.textContent = meta;
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(result => {
+            responseDiv.textContent = JSON.stringify(result, null, 2);
+        })
+        .catch(() => {
+            responseDiv.textContent = 'Помилка виконання';
+        });
+    }
+
+    async function fetchTestNames(testIds) {
+        if (!testIds || testIds.length === 0) return [];
+        const names = [];
+        for (const id of testIds) {
+            try {
+                const response = await fetch(`${backendBaseUrl}/api/ApiTests/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getCookie('AccessToken')}`
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    names.push(`${data.method} ${data.name}`);
+                } else {
+                    names.push(null);
+                }
+            } catch {
+                names.push(null);
+            }
+        }
+        return names.filter(name => name !== null);
+    }
+
+      async function selectTest(element, type) {
+        const parent = element.closest('.dropdown-test');
+        const id = parent.dataset.id;
+        if (type === 'api') {
+            let headers = [], save = [], body = null, expectedResponse = null, queryParameters = [];
+            try {
+                headers = parent.dataset.headers ? JSON.parse(parent.dataset.headers) : [];
+                if (headers && typeof headers === 'object' && !Array.isArray(headers)) {
+                    headers = Object.entries(headers).map(([key, value]) => ({ key, value }));
+                }
+                queryParameters = parent.dataset.queryParameters ? JSON.parse(parent.dataset.queryParameters) : [];
+                if (queryParameters && typeof queryParameters === 'object' && !Array.isArray(queryParameters)) {
+                    queryParameters = Object.entries(queryParameters).map(([key, value]) => ({ key, value }));
+                }
+                save = parent.dataset.save ? JSON.parse(parent.dataset.save) : [];
+                if (save && typeof save === 'object' && !Array.isArray(save)) {
+                    save = Object.entries(save).map(([key, value]) => ({ key, value }));
+                }
+                body = parent.dataset.body ? JSON.parse(parent.dataset.body) : null;
+                expectedResponse = parent.dataset.expectedResult ? JSON.parse(parent.dataset.expectedResult) : null;
+                // Якщо expectedResponse не є рядком, конвертуємо в рядок JSON
+                if (expectedResponse && typeof expectedResponse !== 'string') {
+                    expectedResponse = JSON.stringify(expectedResponse, null, 2);
+                } else if (expectedResponse === null || expectedResponse === undefined) {
+                    expectedResponse = '';
+                }
+            } catch (e) {
+                console.error('Error parsing API test data from sidebar:', e);
+                headers = [];
+                queryParameters = [];
+                save = [];
+                body = {};
+                expectedResponse = '';
+            }
+            const requestData = {
+                type: 'api',
+                id: id,
+                method: parent.dataset.method || 'GET',
+                url: parent.dataset.url || '',
+                name: parent.dataset.name || '',
+                headers: headers,
+                queryParameters: queryParameters,
+                body: body,
+                expectedResponse: expectedResponse,
+                expectedStatusCode: parseInt(parent.dataset.expectedStatus) || 200,
+                isMock: parent.dataset.isMock === 'true',
+                timeoutSeconds: parseInt(parent.dataset.timeoutSeconds) || null,
+                save: save
+            };
+            isNewRequest = false;
+            await updateOrCreateRequestTab(requestData);
+            storeInitialRequestState(currentRequestId);
+            updateSendButton(currentRequestId);
+            const tab = document.querySelector(`.main-request-tab[data-request="${currentRequestId}"]`);
+            if (tab) tab.classList.add('active');
+        } else if (type === 'sql') {
+            await loadTest(id, 'sql');
+            storeInitialSqlState(currentSqlRequestId);
+            updateSqlSendButton(currentSqlRequestId);
+            const tab = document.querySelector(`.main-request-tab[data-sql-request="${currentSqlRequestId}"]`);
+            if (tab) tab.classList.add('active');
+        } else if (type === 'scenario') {
+            await loadTest(id, 'scenario');
+            await new Promise(resolve => setTimeout(resolve, 0));
+            storeInitialScenarioState(currentScenarioId);
+            updateScenarioSendButton(currentScenarioId);
+            const tab = document.querySelector(`.main-request-tab[data-scenario-request="${currentScenarioId}"]`);
+            if (tab) tab.classList.add('active');
+        }
+    }
+    function toggleParametersFormat(sqlRequestId) {
+        const jsonContainer = document.getElementById(`parameters-json-container-${sqlRequestId}`);
+        const tableContainer = document.getElementById(`parameters-table-container-${sqlRequestId}`);
+        const format = document.querySelector(`input[name="parameters-format-${sqlRequestId}"]:checked`).value;
+        jsonContainer.style.display = format === 'json' ? 'block' : 'none';
+        tableContainer.style.display = format === 'table' ? 'block' : 'none';
+        updateSqlSendButton(sqlRequestId);
+    }
+
+    function toggleBodyFormat(requestId) {
+        const jsonContainer = document.getElementById(`body-json-container-${requestId}`);
+        const tableContainer = document.getElementById(`body-table-container-${requestId}`);
+        const format = document.querySelector(`input[name="body-format-${requestId}"]:checked`).value;
+        jsonContainer.style.display = format === 'json' ? 'block' : 'none';
+        tableContainer.style.display = format === 'table' ? 'block' : 'none';
+        updateSendButton(requestId);
+    }
+
+    function toggleExpectedResponseFormat(requestId) {
+        const jsonContainer = document.getElementById(`expected-response-json-container-${requestId}`);
+        const tableContainer = document.getElementById(`expected-response-table-container-${requestId}`);
+        const format = document.querySelector(`input[name="expected-response-format-${requestId}"]:checked`).value;
+        jsonContainer.style.display = format === 'json' ? 'block' : 'none';
+        tableContainer.style.display = format === 'table' ? 'block' : 'none';
+        updateSendButton(requestId);
+    }
+
+    function createNewRequestTab(data) {
+        const requestId = `request-${tabCounter++}`;
+        const tabName = data.name || `Новий запит ${requestId.split('-')[1]}`;
+        const tab = document.createElement('div');
+        tab.className = 'main-request-tab active';
+        tab.dataset.request = requestId;
+        tab.dataset.id = data.id || 0;
+        tab.innerHTML = `<span class="tab-label">${tabName}</span><span class="indicator"></span><span class="close-btn" onclick="closeTab('${requestId}', event)">×</span>`;
+        tab.querySelector('.tab-label').onclick = () => showTab(requestId);
+        const tabsContainer = document.querySelector('.main-request-tabs');
+        const addTabButton = tabsContainer.querySelector('#add-api-test-btn');
+        tabsContainer.insertBefore(tab, addTabButton);
+
+        const content = document.createElement('div');
+        content.className = 'main-request-content';
+        content.id = `request-${requestId}`;
+        content.style.display = 'block';
+        content.innerHTML = generateRequestContent(requestId, data);
+        document.querySelector('.main-request-contents').appendChild(content);
+
+        showTab(requestId);
+        setupFormListeners(requestId);
+        storeInitialRequestState(requestId);
+        currentRequestId = requestId;
+
+        const saveBtn = document.getElementById(`save-btn-${requestId}`);
+        saveBtn.textContent = data.id ? 'Оновити' : 'Зберегти';
+        saveBtn.onclick = () => saveApiTest(requestId);
+    }
+
+      function updateOrCreateRequestTab(data) {
+        const existingTab = document.querySelector(`.main-request-tab[data-id="${data.id}"]`);
+        if (existingTab && data.id) {
+            const requestId = existingTab.dataset.request;
+            currentRequestId = requestId;
+            populateRequestForm(requestId, data);
+            showTab(requestId);
+            storeInitialRequestState(requestId);
+            updateSendButton(requestId);
+            const saveBtn = document.getElementById(`save-btn-${requestId}`);
+            saveBtn.textContent = 'Оновити';
+            saveBtn.onclick = () => saveApiTest(requestId);
+        } else {
+            createNewRequestTab(data);
+        }
+    }
+
+                 async function updateOrCreateSqlRequestTab(data) {
+        const existingTab = document.querySelector(`.main-request-tab[data-id="${data.id}"]`);
+        const sqlRequestId = existingTab ? existingTab.dataset.sqlRequest : `sql-test-${sqlTabCounter++}`;
+        currentSqlRequestId = sqlRequestId;
+
+        if (existingTab && data.id) {
+            // Оновлюємо назву вкладки
+            const tabLabel = existingTab.querySelector('.tab-label');
+            if (tabLabel) tabLabel.textContent = data.name || `SQL тест ${sqlRequestId.split('-')[2]}`;
+            showSqlRequest(sqlRequestId);
+        } else {
+            const tabName = data.name || `Новий SQL тест ${sqlRequestId.split('-')[2]}`;
+            const tab = document.createElement('div');
+            tab.className = 'main-request-tab active';
+            tab.dataset.sqlRequest = sqlRequestId;
+            tab.dataset.id = data.id || 0;
+            tab.innerHTML = `<span class="tab-label">${tabName}</span><span class="indicator"></span><span class="close-btn" onclick="closeSqlTab('${sqlRequestId}', event)">×</span>`;
+            tab.querySelector('.tab-label').onclick = () => showSqlRequest(sqlRequestId);
+
+            const tabsContainer = document.getElementById('sql-tabs');
+            const addTabButton = tabsContainer.querySelector('.main-request-tab:last-child');
+            tabsContainer.insertBefore(tab, addTabButton);
+
+            const content = document.createElement('div');
+            content.className = 'main-request-content';
+            content.id = `sql-request-${sqlRequestId}`;
+            content.style.display = 'block';
+            content.innerHTML = await generateSqlContent(sqlRequestId);
+            document.querySelector('.main-sql-contents').appendChild(content);
+
+            showSqlRequest(sqlRequestId);
+            setupSqlFormListeners(sqlRequestId);
+        }
+
+        // Оновлення полів форми
+        const testIdInput = document.getElementById(`sql-test-id-${sqlRequestId}`);
+        const nameInput = document.getElementById(`sql-test-name-${sqlRequestId}`);
+        const queryDiv = document.getElementById(`sql-test-query-${sqlRequestId}`);
+        const testTypeSelect = document.getElementById(`sql-test-type-${sqlRequestId}`);
+        const expectedJsonDiv = document.getElementById(`sql-test-expected-json-${sqlRequestId}`);
+        const connectionInput = document.getElementById(`sql-test-connection-${sqlRequestId}`);
+        const parametersJsonDiv = document.getElementById(`sql-test-parameters-json-${sqlRequestId}`);
+        const parametersTable = document.getElementById(`parameters-table-${sqlRequestId}`)?.querySelector('tbody');
+
+        if (testIdInput) testIdInput.value = data.id || 0;
+        if (nameInput) nameInput.value = data.name || '';
+        if (queryDiv) queryDiv.textContent = data.sqlQuery || '';
+        if (testTypeSelect) testTypeSelect.value = Object.keys({ Scalar: 0, ResultSet: 1, Schema: 2 })[data.testType] || 'Scalar';
+        if (expectedJsonDiv) expectedJsonDiv.textContent = data.expectedJson || '';
+        if (connectionInput) {
+            const userConnectionString = await fetchUserConnectionString();
+            connectionInput.value = data.databaseConnectionName || userConnectionString || 'DefaultConnection';
+        }
+
+        // Визначаємо формат параметрів
+        const parametersFormat = data.parametersJson && isValidJson(data.parametersJson) ? 'json' : 'table';
+        const formatRadio = document.querySelector(`input[name="parameters-format-${sqlRequestId}"][value="${parametersFormat}"]`);
+        if (formatRadio) formatRadio.checked = true;
+        toggleParametersFormat(sqlRequestId);
+
+        // Синхронізація параметрів між JSON і таблицею
+        if (parametersJsonDiv) parametersJsonDiv.textContent = data.parametersJson || '{}';
+        if (parametersTable) {
+            parametersTable.innerHTML = ''; // Очищаємо таблицю
+            if (data.parametersJson && isValidJson(data.parametersJson)) {
+                const params = JSON.parse(data.parametersJson);
+                Object.entries(params).forEach(([key, value]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><input type="text" value="${key}"></td>
+                        <td><input type="text" value="${value}"></td>
+                        <td><button type="button" onclick="this.parentElement.parentElement.remove(); updateSqlSendButton('${sqlRequestId}')">-</button></td>
+                    `;
+                    parametersTable.appendChild(row);
+                });
+            }
+        }
+
+        storeInitialSqlState(sqlRequestId);
+        updateSqlSendButton(sqlRequestId);
+    }
+    function updateOrCreateScenarioTab(data) {
+        const existingTab = document.querySelector(`.main-request-tab[data-id="${data.id}"]`);
+        const scenarioRequestId = existingTab ? existingTab.dataset.scenarioRequest : `scenario-${scenarioTabCounter++}`;
+        currentScenarioId = scenarioRequestId;
+
+        if (existingTab && data.id) {
+            showScenario(scenarioRequestId);
+        } else {
+            const tabName = data.scenarioName || `Новий сценарій ${scenarioRequestId.split('-')[1]}`;
+            const tab = document.createElement('div');
+            tab.className = 'main-request-tab active';
+            tab.dataset.scenarioRequest = scenarioRequestId;
+            tab.dataset.id = data.id || 0;
+            tab.innerHTML = `<span class="tab-label">${tabName}</span><span class="indicator"></span><span class="close-btn" onclick="closeScenarioTab('${scenarioRequestId}', event)">×</span>`;
+            tab.querySelector('.tab-label').onclick = () => showScenario(scenarioRequestId);
+
+            const tabsContainer = document.getElementById('scenario-tabs');
+            const addTabButton = tabsContainer.querySelector('.main-request-tab:last-child');
+            tabsContainer.insertBefore(tab, addTabButton);
+
+            const content = document.createElement('div');
+            content.className = 'main-request-content';
+            content.id = `scenario-request-${scenarioRequestId}`;
+            content.style.display = 'block';
+            content.innerHTML = generateScenarioContent(scenarioRequestId);
+            document.querySelector('.main-scenario-contents').appendChild(content);
+
+            showScenario(scenarioRequestId);
+            setupScenarioFormListeners(scenarioRequestId);
+        }
+
+        document.getElementById(`scenario-id-${scenarioRequestId}`).value = data.id || 0;
+        document.getElementById(`scenario-name-${scenarioRequestId}`).value = data.scenarioName || '';
+        const testList = document.getElementById(`scenario-test-list-${scenarioRequestId}`);
+        testList.innerHTML = '';
+
+        if (data.testIds && data.testIds.length > 0) {
+            fetchTestNames(data.testIds).then(testNames => {
+                testNames.forEach((name, index) => {
+                    if (name) {
+                        addTestToScenario(scenarioRequestId, data.testIds[index], name);
+                    }
+                });
+                storeInitialScenarioState(scenarioRequestId);
+                updateScenarioSendButton(scenarioRequestId);
+            });
+        } else {
+            storeInitialScenarioState(scenarioRequestId);
+            updateScenarioSendButton(scenarioRequestId);
+        }
+    }
+
+    function showTab(requestId) {
+        document.querySelectorAll('.main-request-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.main-request-content').forEach(content => content.style.display = 'none');
+        const tab = document.querySelector(`.main-request-tab[data-request="${requestId}"]`);
+        const content = document.getElementById(`request-${requestId}`);
+        if (tab) tab.classList.add('active');
+        if (content) content.style.display = 'block';
+        currentRequestId = requestId;
+        updateSendButton(requestId);
+    }
+
+    function closeTab(requestId, event) {
+        event.stopPropagation();
+        const tab = document.querySelector(`.main-request-tab[data-request="${requestId}"]`);
+        const content = document.getElementById(`request-${requestId}`);
+        const wasActive = tab.classList.contains('active');
+        if (tab) tab.remove();
+        if (content) content.remove();
+        delete initialRequestStates[requestId];
+        if (wasActive) {
+            const tabs = document.querySelectorAll('.main-request-tabs .main-request-tab:not(#add-api-test-btn)');
+            if (tabs.length > 0) {
+                showTab(tabs[tabs.length - 1].dataset.request);
+            }
+        }
+    }
+
+    function storeInitialRequestState(requestId) {
+        const content = document.getElementById(`request-${requestId}`);
+        if (!content) return;
+        const method = document.getElementById(`method-${requestId}`)?.value || '';
+        const url = document.getElementById(`url-${requestId}`)?.value || '';
+        const name = document.getElementById(`test-name-${requestId}`)?.value || '';
+        const bodyFormat = document.querySelector(`input[name="body-format-${requestId}"]:checked`)?.value || 'json';
+        let body = '';
+        if (bodyFormat === 'json') {
+            body = document.getElementById(`body-${requestId}`)?.textContent || '';
+        } else {
+            const bodyTable = document.getElementById(`body-table-${requestId}`);
+            const bodyObj = {};
+            if (bodyTable) {
+                bodyTable.querySelectorAll('tbody tr').forEach(row => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) bodyObj[key] = value;
+                });
+                body = JSON.stringify(bodyObj);
+            }
+        }
+        const expectedResponseFormat = document.querySelector(`input[name="expected-response-format-${requestId}"]:checked`)?.value || 'json';
+        let expectedResponse = '';
+        if (expectedResponseFormat === 'json') {
+            expectedResponse = document.getElementById(`expected-response-${requestId}`)?.textContent || '';
+        } else {
+            const expectedResponseTable = document.getElementById(`expected-response-table-${requestId}`);
+            const expectedObj = {};
+            if (expectedResponseTable) {
+                expectedResponseTable.querySelectorAll('tbody tr').forEach(row => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) expectedObj[key] = value;
+                });
+                expectedResponse = JSON.stringify(expectedObj);
+            }
+        }
+        const paramsTable = document.getElementById(`params-table-${requestId}`);
+        const params = [];
+        if (paramsTable) {
+            paramsTable.querySelectorAll('tbody tr').forEach(row => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) params.push({ key, value });
+            });
+        }
+        const headersTable = document.getElementById(`headers-table-${requestId}`);
+        const headers = [];
+        if (headersTable) {
+            headersTable.querySelectorAll('tbody tr').forEach(row => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) headers.push({ key, value });
+            });
+        }
+        const saveTable = document.getElementById(`save-table-${requestId}`);
+        const save = [];
+        if (saveTable) {
+            saveTable.querySelectorAll('tbody tr').forEach(row => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) save.push({ key, value });
+            });
+        }
+        const expectedStatusCode = document.getElementById(`expected-status-code-${requestId}`)?.value || '';
+        const isMock = document.getElementById(`is-mock-${requestId}`)?.checked || false;
+        const timeoutSeconds = document.getElementById(`timeout-seconds-${requestId}`)?.value || '';
+
+        initialRequestStates[requestId] = {
+            method,
+            url,
+            name,
+            body,
+            bodyFormat,
+            expectedResponse,
+            expectedResponseFormat,
+            params: JSON.stringify(params),
+            headers: JSON.stringify(headers),
+            save: JSON.stringify(save),
+            expectedStatusCode,
+            isMock,
+            timeoutSeconds
+        };
+    }
+
+    function hasChanges(requestId) {
+        const content = document.getElementById(`request-${requestId}`);
+        if (!content) return false;
+        const initialState = initialRequestStates[requestId] || {};
+        const currentMethod = document.getElementById(`method-${requestId}`)?.value || '';
+        const currentUrl = document.getElementById(`url-${requestId}`)?.value || '';
+        const currentName = document.getElementById(`test-name-${requestId}`)?.value || '';
+        const currentBodyFormat = document.querySelector(`input[name="body-format-${requestId}"]:checked`)?.value || 'json';
+        let currentBody = '';
+        if (currentBodyFormat === 'json') {
+            currentBody = document.getElementById(`body-${requestId}`)?.textContent || '';
+        } else {
+            const bodyTable = document.getElementById(`body-table-${requestId}`);
+            const bodyObj = {};
+            if (bodyTable) {
+                bodyTable.querySelectorAll('tbody tr').forEach(row => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) bodyObj[key] = value;
+                });
+                currentBody = JSON.stringify(bodyObj);
+            }
+        }
+        const currentExpectedResponseFormat = document.querySelector(`input[name="expected-response-format-${requestId}"]:checked`)?.value || 'json';
+        let currentExpectedResponse = '';
+        if (currentExpectedResponseFormat === 'json') {
+            currentExpectedResponse = document.getElementById(`expected-response-${requestId}`)?.textContent || '';
+        } else {
+            const expectedResponseTable = document.getElementById(`expected-response-table-${requestId}`);
+            const expectedObj = {};
+            if (expectedResponseTable) {
+                expectedResponseTable.querySelectorAll('tbody tr').forEach(row => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) expectedObj[key] = value;
+                });
+                currentExpectedResponse = JSON.stringify(expectedObj);
+            }
+        }
+        const paramsTable = document.getElementById(`params-table-${requestId}`);
+        const currentParams = [];
+        if (paramsTable) {
+            paramsTable.querySelectorAll('tbody tr').forEach(row => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) currentParams.push({ key, value });
+            });
+        }
+        const headersTable = document.getElementById(`headers-table-${requestId}`);
+        const currentHeaders = [];
+        if (headersTable) {
+            headersTable.querySelectorAll('tbody tr').forEach(row => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) currentHeaders.push({ key, value });
+            });
+        }
+        const saveTable = document.getElementById(`save-table-${requestId}`);
+        const currentSave = [];
+        if (saveTable) {
+            saveTable.querySelectorAll('tbody tr').forEach(row => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) currentSave.push({ key, value });
+            });
+        }
+        const currentExpectedStatusCode = document.getElementById(`expected-status-code-${requestId}`)?.value || '';
+        const currentIsMock = document.getElementById(`is-mock-${requestId}`)?.checked || false;
+        const currentTimeoutSeconds = document.getElementById(`timeout-seconds-${requestId}`)?.value || '';
+
+        return initialState.method !== currentMethod ||
+               initialState.url !== currentUrl ||
+               initialState.name !== currentName ||
+               initialState.body !== currentBody ||
+               initialState.bodyFormat !== currentBodyFormat ||
+               initialState.expectedResponse !== currentExpectedResponse ||
+               initialState.expectedResponseFormat !== currentExpectedResponseFormat ||
+               initialState.params !== JSON.stringify(currentParams) ||
+               initialState.headers !== JSON.stringify(currentHeaders) ||
+               initialState.save !== JSON.stringify(currentSave) ||
+               initialState.expectedStatusCode !== currentExpectedStatusCode ||
+               initialState.isMock !== currentIsMock ||
+               initialState.timeoutSeconds !== currentTimeoutSeconds;
+    }
+
+    function updateSendButton(requestId) {
+        const saveBtn = document.getElementById(`save-btn-${requestId}`);
+        const content = document.getElementById(`request-${requestId}`);
+        if (!saveBtn || !content) return;
+        const testId = parseInt(content.querySelector(`#test-id-${requestId}`)?.value) || 0;
+
+        if (testId === 0 || hasChanges(requestId)) {
+            saveBtn.textContent = testId === 0 ? 'Зберегти' : 'Оновити';
+            saveBtn.onclick = () => saveApiTest(requestId);
+        } else {
+            saveBtn.textContent = 'SEND';
+            saveBtn.onclick = () => runApiTest(requestId);
+        }
+    }
+
+                function saveApiTest(requestId) {
+        const content = document.getElementById(`request-${requestId}`);
+        const id = parseInt(content.querySelector(`#test-id-${requestId}`)?.value) || 0;
+        const method = content.querySelector(`#method-${requestId}`)?.value || 'GET';
+        const url = content.querySelector(`#url-${requestId}`)?.value || '';
+        const name = document.getElementById(`test-name-${requestId}`)?.value || `Test_${requestId}`;
+        const expectedStatusCode = parseInt(content.querySelector(`#expected-status-code-${requestId}`)?.value) || 200;
+        const isMock = content.querySelector(`#is-mock-${requestId}`)?.checked || false;
+        const timeoutSeconds = parseInt(content.querySelector(`#timeout-seconds-${requestId}`)?.value) || null;
+
+        let headers = {};
+        let queryParameters = {};
+        let body = {};
+        let expectedResponse = '';
+
+        try {
+            const headersTable = document.getElementById(`headers-table-${requestId}`).querySelector('tbody');
+            headers = Array.from(headersTable.querySelectorAll('tr')).reduce((acc, row) => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) acc[key] = value;
+                return acc;
+            }, {});
+
+            const paramsTable = document.getElementById(`params-table-${requestId}`).querySelector('tbody');
+            queryParameters = Array.from(paramsTable.querySelectorAll('tr')).reduce((acc, row) => {
+                const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                if (key) acc[key] = value;
+                return acc;
+            }, {});
+
+            const bodyFormat = document.querySelector(`input[name="body-format-${requestId}"]:checked`)?.value || 'json';
+            if (bodyFormat === 'json') {
+                body = document.getElementById(`body-${requestId}`)?.textContent || '{}';
+                body = JSON.parse(body);
+            } else {
+                const bodyTable = document.getElementById(`body-table-${requestId}`).querySelector('tbody');
+                body = Array.from(bodyTable.querySelectorAll('tr')).reduce((acc, row) => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) acc[key] = value;
+                    return acc;
+                }, {});
+            }
+
+            const expectedResponseFormat = document.querySelector(`input[name="expected-response-format-${requestId}"]:checked`)?.value || 'json';
+            if (expectedResponseFormat === 'json') {
+                expectedResponse = document.getElementById(`expected-response-${requestId}`)?.textContent || '{}';
+                expectedResponse = JSON.parse(expectedResponse);
+                expectedResponse = JSON.stringify(expectedResponse);
+            } else {
+                const expectedResponseTable = document.getElementById(`expected-response-table-${requestId}`).querySelector('tbody');
+                expectedResponse = Array.from(expectedResponseTable.querySelectorAll('tr')).reduce((acc, row) => {
+                    const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+                    const value = row.querySelector('td:nth-child(2) input')?.value || '';
+                    if (key) acc[key] = value;
+                    return acc;
+                }, {});
+                expectedResponse = JSON.stringify(expectedResponse);
+            }
+        } catch (e) {
+            alert('Invalid JSON in headers, query parameters, body, or expected response.');
+            console.error('Parse error:', e);
+            return;
+        }
+
+        const saveTable = document.getElementById(`save-table-${requestId}`).querySelector('tbody');
+        const save = Array.from(saveTable.querySelectorAll('tr')).reduce((acc, row) => {
+            const key = row.querySelector('td:nth-child(1) input')?.value.trim() || '';
+            const value = row.querySelector('td:nth-child(2) input')?.value || '';
+            if (key) acc[key] = value; // Змінено з push({ key, value }) на прямий запис у словник
+            return acc;
+        }, {});
+
+        const data = {
+            id: id,
+            name: name,
+            method: method,
+            url: url,
+            headers: headers,
+            queryParameters: queryParameters,
+            bodyJson: body,
+            expectedResponse: expectedResponse,
+            expectedStatusCode: expectedStatusCode,
+            isMock: isMock,
+            timeoutSeconds: timeoutSeconds,
+            save: save,
+            createdByUserId: getUserIdFromToken() || null
+        };
+
+        if (!data.name || !data.url || !data.createdByUserId) {
+            alert('Fill all required fields: Name, URL, and User ID.');
+            return;
+        }
+
+        const endpoint = `/api/ApiTests${id ? `/${id}` : ''}`;
+        const methodType = id ? 'PUT' : 'POST';
+
+        fetch(`${backendBaseUrl}${endpoint}`, {
+            method: methodType,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${text}`);
+                });
+            }
+            return response.status === 204 ? { id: id } : response.json();
+        })
+        .then(result => {
+            if (id === 0) {
+                content.querySelector(`#test-id-${requestId}`).value = result.id;
+                data.id = result.id;
+            }
+            updateOrCreateRequestTab(data);
+            updateApiSidebar(data, id === 0);
+            storeInitialRequestState(requestId);
+            updateSendButton(requestId);
+        })
+        .catch(error => {
+            console.error('Error saving API test:', error);
+            alert('Помилка збереження API тесту: ' + error.message);
+        });
+    }
+    function clearApiError(requestId) {
+        const responseContainer = document.getElementById(`response-${requestId}`);
+        if (!responseContainer) return;
+
+        const errorDiv = responseContainer.querySelector('.error-message');
+        if (errorDiv) {
+            errorDiv.remove();
+        }
+    }
+          function updateApiSidebar(data, isNew) {
+        const sidebar = document.getElementById('tab-api');
+        const existing = sidebar.querySelector(`.dropdown-test[data-id="${data.id}"]`);
+        if (existing && !isNew) {
+            existing.remove();
+        } else if (existing) {
+            return;
+        }
+        const testElement = document.createElement('div');
+        testElement.className = 'dropdown-test';
+        testElement.dataset.type = 'api';
+        testElement.dataset.id = data.id;
+        testElement.dataset.name = data.name;
+        testElement.dataset.method = data.method;
+        testElement.dataset.url = data.url;
+        testElement.dataset.headers = JSON.stringify(data.headers || []);
+        testElement.dataset.queryParameters = JSON.stringify(data.queryParameters || []);
+        testElement.dataset.body = JSON.stringify(data.body || {});
+        testElement.dataset.expectedResult = JSON.stringify(data.expectedResponse || {});
+        testElement.dataset.expectedStatus = data.expectedStatusCode;
+        testElement.dataset.isMock = data.isMock;
+        testElement.dataset.timeoutSeconds = data.timeoutSeconds || '';
+        testElement.dataset.save = JSON.stringify(data.save || []);
+        testElement.innerHTML = `
+            <div class="dropdown-header" onclick="toggleTestDropdown(this); selectTest(this, 'api')">
+                <span>${data.method} ${data.name}</span>
+                <span class="main-options-icon" onclick="showContextMenu(event, ${data.id}, 'api', this)"></span>
+            </div>
+            <div class="dropdown-body">
+                <p><strong>Метод:</strong> ${data.method}</p>
+                <p><strong>URL:</strong> ${data.url}</p>
+                <p><strong>Заголовки:</strong> <span class="json-body">${JSON.stringify(data.headers || [], null, 2)}</span></p>
+                <p><strong>Query-параметри:</strong> <span class="json-body">${JSON.stringify(data.queryParameters || [], null, 2)}</span></p>
+                <p><strong>Тіло:</strong> <span class="json-body">${JSON.stringify(data.body || {}, null, 2)}</span></p>
+                <p><strong>Очікувана відповідь:</strong> <span class="json-body">${JSON.stringify(data.expectedResponse || {}, null, 2)}</span></p>
+                <p><strong>Очікуваний статус:</strong> ${data.expectedStatusCode}</p>
+                <p><strong>Мок:</strong> ${data.isMock ? 'Так' : 'Ні'}</p>
+                <p><strong>Таймаут:</strong> ${data.timeoutSeconds || 'Немає'}</p>
+                <p><strong>Збереження:</strong> <span class="json-body">${JSON.stringify(data.save || [], null, 2)}</span></p>
+            </div>
+        `;
+        sidebar.appendChild(testElement);
+    }
+        async function fetchUserConnectionString() {
+        try {
+            const response = await fetch(`${backendBaseUrl}/api/Account/connection-string`, {
+                headers: {
+                    'Authorization': `Bearer ${getCookie('AccessToken')}`,
+                    'Accept': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                console.error(`Failed to fetch connection string: ${response.status} ${response.statusText}`);
+                throw new Error('Failed to fetch connection string');
+            }
+            const connectionString = await response.text();
+            console.log('Fetched connection string from backend:', connectionString);
+            return connectionString;
+        } catch (error) {
+            console.error('Error fetching connection string:', error);
+            return '';
+        }
+    }
+    function runApiTest(requestId) {
+        const content = document.getElementById(`request-${requestId}`);
+        const testId = parseInt(content.querySelector(`#test-id-${requestId}`)?.value) || null;
+        if (!testId) return;
+        const responseDiv = document.getElementById(`response-${requestId}`);
+        const metaDiv = document.getElementById(`response-meta-${requestId}`);
+        responseDiv.textContent = 'Виконується...';
+        metaDiv.textContent = '';
+        const startTime = performance.now();
+        fetch(`${backendBaseUrl}/api/TestRunner/RunApiTest/${testId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => {
+            const duration = performance.now() - startTime;
+            const meta = `Status: ${response.status}, Time: ${duration.toFixed(2)}ms`;
+            metaDiv.textContent = meta;
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+        })
+        .then(result => {
+            responseDiv.textContent = JSON.stringify(result, null, 2);
+        })
+        .catch(() => {
+            responseDiv.textContent = 'Помилка виконання';
+        });
+    }
+
+
+      document.addEventListener('DOMContentLoaded', () => {
+    fetch(`${backendBaseUrl}/api/ApiTests`, {
+        headers: {
+            'Authorization': `Bearer ${getCookie('AccessToken')}`
+        }
+    })
+    .then(response => response.json())
+    .then(tests => {
+        tests.forEach(test => {
+            test.queryParameters = test.queryParameters
+                ? Object.entries(test.queryParameters).map(([key, value]) => ({ key, value }))
+                : [];
+          
+            test.headers = test.headers
+                ? Object.entries(test.headers).map(([key, value]) => ({ key, value }))
+                : [];
+            updateApiSidebar(test, true);
+        });
+    });
+        fetch(`${backendBaseUrl}/api/SqlTests`, {
+            headers: {
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => response.json())
+        .then(tests => {
+            tests.forEach(test => updateSqlSidebar(test, true));
+        });
+
+        fetch(`${backendBaseUrl}/api/ApiTestScenarios`, {
+            headers: {
+                'Authorization': `Bearer ${getCookie('AccessToken')}`
+            }
+        })
+        .then(response => response.json())
+        .then(scenarios => {
+            scenarios.forEach(scenario => updateScenarioSidebar(scenario, true));
+        });
+
+        document.getElementById('add-api-test-btn').addEventListener('click', addNewApiTest);
+        document.getElementById('add-sql-test-btn').addEventListener('click', addNewSqlTest);
+        document.getElementById('add-scenario-btn').addEventListener('click', addNewScenario);
+    });
+</script>

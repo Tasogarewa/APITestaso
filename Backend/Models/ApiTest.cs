@@ -16,7 +16,7 @@ namespace Backend.Models
         public string Url { get; set; } = default!;
 
         public Dictionary<string, string>? Headers { get; set; }
-
+        public Dictionary<string, string>? QueryParameters { get; set; }
         public object? BodyJson { get; set; }
 
         public string? ExpectedResponse { get; set; }

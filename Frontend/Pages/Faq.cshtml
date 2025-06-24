@@ -1,0 +1,535 @@
+﻿@page
+@model Frontend.Pages.FaqModel
+@{
+    ViewData["Title"] = "Поширені запитання (FAQ)";
+}
+  
+    <style>
+        .faq-page *,
+        .faq-page *::before,
+        .faq-page *::after {
+            box-sizing: border-box;
+        }
+
+        .faq-page {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1c2526, #2e3b3e);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            color: #c0c0c0;
+            font-size: 14px;
+        }
+
+            .faq-page .faq-header {
+                background: #2e3b3e;
+                height: 100px;
+                display: flex;
+                align-items: center;
+                padding: 10px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            }
+
+            .faq-page .faq-content {
+                padding: 20px;
+                flex-grow: 1;
+                max-width: 1200px;
+                margin: 0 auto;
+                width: 100%;
+            }
+
+                .faq-page .faq-content h1 {
+                    color: #8aa8c3;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    margin-bottom: 20px;
+                    text-shadow: 0 0 5px rgba(138, 168, 195, 0.5);
+                }
+
+            .faq-page .faq-item {
+                background: rgba(46, 59, 62, 0.9);
+                border-radius: 10px;
+                box-shadow: 0 4px 15px rgba(109, 130, 153, 0.3);
+                margin-bottom: 15px;
+                border: 1px solid rgba(109, 130, 153, 0.2);
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+
+                .faq-page .faq-item:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 8px 20px rgba(109, 130, 153, 0.5);
+                }
+
+            .faq-page .faq-item-header {
+                padding: 15px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+                .faq-page .faq-item-header h3 {
+                    margin: 0;
+                    color: #6d8299;
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+
+                .faq-page .faq-item-header .toggle-icon::after {
+                    content: '▼';
+                    color: #6d8299;
+                    font-size: 12px;
+                    transition: transform 0.3s ease;
+                }
+
+            .faq-page .faq-item.active .toggle-icon::after {
+                transform: rotate(180deg);
+            }
+
+            .faq-page .faq-item-content {
+                display: none;
+                padding: 15px;
+                border-top: 1px solid rgba(109, 130, 153, 0.2);
+                background: rgba(36, 49, 52, 0.95);
+            }
+
+            .faq-page .faq-item.active .faq-item-content {
+                display: block;
+            }
+
+            .faq-page .faq-item-content p {
+                margin: 5px 0;
+                color: #8aa8c3;
+                font-size: 12px;
+            }
+
+            .faq-page .faq-item-content pre {
+                background: rgba(0, 0, 0, 0.3);
+                padding: 10px;
+                border-radius: 5px;
+                overflow-x: auto;
+            }
+
+            .faq-page .faq-item-content code {
+                color: #c0c0c0;
+                font-family: 'Fira Code', monospace;
+            }
+
+            .faq-page .faq-item-content ul {
+                margin: 10px 0;
+                padding-left: 20px;
+            }
+
+            .faq-page .faq-item-content li {
+                color: #8aa8c3;
+                font-size: 12px;
+                margin-bottom: 5px;
+            }
+
+            .faq-page .empty-state {
+                text-align: center;
+                margin-top: 100px;
+                color: #6d8299;
+            }
+
+                .faq-page .empty-state img {
+                    height: 100px;
+                    margin-bottom: 10px;
+                    filter: drop-shadow(0 0 10px rgba(109, 130, 153, 0.5));
+                }
+
+                .faq-page .empty-state h3 {
+                    color: #6d8299;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+
+                .faq-page .empty-state p {
+                    color: #6d8299;
+                    font-size: 14px;
+                }
+    </style>
+
+    <div class="faq-page">
+        <div class="faq-header"></div>
+        <div class="faq-content">
+            <h1>Поширені запитання (FAQ)</h1>
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як створити новий API тест?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>API-тест дозволяє перевірити взаємодію з веб-сервісом. Щоб створити новий тест, виконайте наступні кроки:</p>
+                    <ul>
+                        <li>Перейдіть до вкладки "API" у боковій панелі.</li>
+                        <li>Натисніть кнопку "+ Новий API тест" у верхній частині вкладок запитів.</li>
+                        <li>
+                            Заповніть поля:
+                            <ul>
+                                <li><b>Метод</b>: Виберіть HTTP-метод (GET, POST, PUT, DELETE тощо).</li>
+                                <li><b>URL</b>: Вкажіть повний URL, наприклад, <code>https://api.example.com/v1/users</code>.</li>
+                                <li><b>Заголовки</b>: Додайте заголовки, наприклад, <code>Authorization: Bearer ваш_токен</code>.</li>
+                                <li>
+                                    <b>Body</b> Для POST або PUT введіть JSON, наприклад:
+                                    <pre><code>
+{
+    "name": "John Doe",
+    "email": "john@example.com"
+}
+                                    </code></pre>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>Натисніть "Зберегти" для збереження тесту.</li>
+                    </ul>
+                    <p><b>Порада:</b> Використовуйте вкладку "Params" для передачі query-параметрів (наприклад, <code>?id=123</code>) та перевірте коректність формату JSON у вкладці "Body".</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як запланувати сценарій?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Планування сценарію дозволяє автоматизувати виконання набору тестів. Для цього:</p>
+                    <ul>
+                        <li>Перейдіть до вкладки "Сценарії".</li>
+                        <li>Виберіть потрібний сценарій, клацніть правою кнопкою миші та виберіть "Запланувати".</li>
+                        <li>
+                            У модальному вікні:
+                            <ul>
+                                <li><b>Час початку:</b> Вкажіть дату та час першого запуску.</li>
+                                <li><b>Cron-вираз:</b> Використовуйте стандартний формат Cron для періодичності. Наприклад, <code>0 * * * *</code> запускає сценарій щогодини.</li>
+                                <li><b>Приклад Cron:</b> <code>0 0 * * * *</code> – щодня о півночі, <code>*/15 * * * *</code> – кожні 15 хвилин.</li>
+                            </ul>
+                        </li>
+                        <li>Натисніть "Запланувати".</li>
+                    </ul>
+                    <p><b>Порада:</b> Використовуйте онлайн-генератори Cron-виразів, якщо не знаєте формат. Перевірте, що ваш токен доступу активний на момент виконання сценарію.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як змінити параметри SQL тесту?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>SQL-тест змінює параметри для динамічних запитів до бази даних. Щоб це зробити:</p>
+                    <ul>
+                        <li>Відкрийте SQL тест у вкладці "Query".</li>
+                        <li>
+                            Виберіть формат параметрів:
+                            <ul>
+                                <li><b>JSON:</b> Введіть параметри у вигляді об’єкта, наприклад, <code>{"user_id": 1}</code>).</li>
+                                <li><b>Таблиця:</b> Заповніть таблицю, де кожне поле відповідає параметру запиту.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            Приклад SQL-запиту з параметрами:
+                            <pre><code>
+SELECT * FROM users u WHERE u.id = :user_id;
+                            </code></pre>
+                        </li>
+                        <li>Натисніть "Оновити" або "SEND" для виконання тесту.</li>
+                    </ul>
+                    <p><b>Порада:</b> Переконайтеся, що назви параметрів у SQL-запиті відповідають ключам у JSON або таблиці. Уникайте використання зарезервованих слів SQL у назвах параметрів.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як експортувати результати тестів?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Експорт результатів тестів дозволяє зберегти дані для подальшого аналізу:</p>
+                    <ul>
+                        <li>Перейдіть до вкладки "Test Results".</li>
+                        <li>Натисніть кнопку "Export Results".</li>
+                        <li>
+                            У модальному вікні виберіть формат:
+                            <ul>
+                                <li><b>JSON:</b> Для програмного аналізу.</li>
+                                <li><b>XML:</b> Для систем, що підтримують XML.</li>
+                                <li><b>CSV:</b> Для перегляду в таблицях, наприклад, Excel.</li>
+                            </ul>
+                        </li>
+                        <li>Натисніть "Export" для завантаження файлу.</li>
+                    </ul>
+                    <p><b>Приклад:</b> Виберіть "CSV", натисніть "Export", і файл <code>test_results.csv</code> завантажиться, містячи дані, такі як дата виконання, успіх/невдача та відповідь.</p>
+                    <p><b>Порада:</b> Якщо CSV-файл відображається некоректно в Excel, перевірте кодування файлу (UTF-8) або відкрийте його через текстові редактори, такі як Notepad++.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Що робити, якщо тест не виконується?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Якщо тест не виконується, виконайте наступні перевірки:</p>
+                    <ul>
+                        <li>
+                            <b>Перевірте введені дані:</b>
+                            <ul>
+                                <li>Для API: Коректність URL, заголовків, JSON-тiла.</li>
+                                <li>Для SQL: Синтаксис запиту та назви параметрів.</li>
+                            </ul>
+                        </li>
+                        <li><b>Токен доступу:</b> Переконайтеся, що токен активний. Оновіть його в налаштуваннях профілю, якщо потрібно.</li>
+                        <li><b>Помилки в консолі:</b> Відкрийте консоль браузера (F12 → Console) і перевірте повідомлення про помилки.</li>
+                        <li><b>Ліміти:</b> Перевірте, чи не перевищено ліміт запитів для вашого облікового запису.</li>
+                    </ul>
+                    <p><b>Порада:</b> Спробуйте виконати тест у режимі "Debug", щоб отримати детальний лог виконання.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як налаштувати авторизацію для API-тестів?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Для API-тестів часто потрібна авторизація. Щоб її налаштувати:</p>
+                    <ul>
+                        <li>Перейдіть до вкладки "API" і виберіть тест.</li>
+                        <li>
+                            У розділі "Headers" додайте заголовок:
+                            <pre><code>
+Authorization: Bearer ваш_токен
+                            </code></pre>
+                            або
+                            <pre><code>
+Authorization: Basic закодовані_дані
+                            </code></pre>
+                        </li>
+                       
+                    </ul>
+                    <p><b>Порада:</b> Зберігайте токени в безпечному місці та не передавайте їх у відкритих каналах. Використовуйте змінні середовища для повторного використання токенів.</p>
+                </div>
+            </div>
+
+           
+
+           
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як обробляти помилки API?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Для обробки помилок API:</p>
+                    <ul>
+                        <li>Перевірте статус-код відповіді (наприклад, 400, 401, 500) у вкладці "Response".</li>
+                        <li>
+                            Типові помилки:
+                            <ul>
+                                <li><b>401 Unauthorized:</b> Некоректний або прострочений токен.</li>
+                                <li><b>400 Bad Request:</b> Некоректний формат JSON або параметрів.</li>
+                                <li><b>500 Internal Server Error:</b> Проблема на сервері.</li>
+                            </ul>
+                        </li>
+                        <li>
+                            Додайте перевірки у сценарії:
+                            <pre><code>
+if (response.status === 200) {
+    console.log("Success");
+} else {
+    console.error("Error: " + response.status);
+}
+                            </code></pre>
+                        </li>
+                    </ul>
+                    <p><b>Порада:</b> Налаштуйте сповіщення (наприклад, через email) для критичних помилок у вкладці "Notifications".</p>
+                </div>
+            </div>
+
+            
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як працює вкладка профілю користувача?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Вкладка профілю користувача дозволяє переглядати та редагувати інформацію про ваш обліковий запис, а також керувати вашими API-тестами, SQL-тестами, сценаріями та результатами тестів.</p>
+                    <ul>
+                        <li><b>Перегляд профілю:</b> На сторінці відображається ваша електронна пошта та аватар. Натисніть "Edit Profile", щоб відкрити модальне вікно для редагування.</li>
+                        <li><b>Вкладки:</b> Є п’ять вкладок: APIs, Scenarios, SQL, Test Results і Statistics. Кожна вкладка показує відповідні дані, створені вами.</li>
+                        <li><b>Фільтри:</b> Кожна вкладка (крім Statistics) має фільтри для сортування даних, наприклад, за назвою чи типом тесту.</li>
+                    </ul>
+                    <p><b>Приклад:</b> У вкладці "APIs" виберіть фільтр "Method GET", щоб показати лише GET-запити. Клацніть на картку тесту, щоб розгорнути деталі, такі як URL чи очікувана відповідь.</p>
+                    <p><b>Порада:</b> Якщо вкладка порожня, створіть новий тест або сценарій у головному інтерфейсі, щоб побачити дані тут.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як працює фільтрація даних у вкладках?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Фільтри дозволяють сортувати та звужувати список даних у вкладках APIs, Scenarios, SQL і Test Results.</p>
+                    <ul>
+                        <li><b>APIs:</b> Фільтруйте за назвою (A-Z, Z-A), методом (GET, POST) або типом (Mock True/False).</li>
+                        <li><b>Scenarios:</b> Фільтруйте за назвою (A-Z, Z-A).</li>
+                        <li><b>SQL:</b> Фільтруйте за назвою (A-Z, Z-A) або типом тесту (Scalar, ResultSet, Schema).</li>
+                        <li><b>Test Results:</b> Фільтруйте за датою (спочатку новіші чи старіші) або статусом (успішні/невдалі).</li>
+                        <li><b>Reset:</b> Скидає фільтр до початкового стану (A-Z для більшості вкладок, за датою для Test Results).</li>
+                    </ul>
+                    <p><b>Приклад:</b> У вкладці "Test Results" виберіть "Success" для відображення лише успішних тестів. Натисніть "Reset", щоб повернутися до сортування за датою (спочатку новіші).</p>
+                    <p><b>Порада:</b> Фільтри зберігаються для кожної вкладки окремо, тому зміна фільтра в одній вкладці не впливає на інші.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як редагувати профіль користувача?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Щоб відредагувати профіль:</p>
+                    <ul>
+                        <li>Натисніть "Edit Profile" на сторінці профілю.</li>
+                        <li>
+                            У модальному вікні заповніть поля:
+                            <ul>
+                                <li><b>Email:</b> Введіть дійсну електронну пошту (обов’язкове поле).</li>
+                                <li><b>Full Name:</b> Введіть ваше ім’я (обов’язкове поле).</li>
+                                <li><b>Phone Number:</b> Введіть номер телефону (необов’язкове).</li>
+                                <li><b>Database Connection String:</b> Вкажіть рядок підключення до бази даних для SQL-тестів.</li>
+                            </ul>
+                        </li>
+                        <li>Натисніть "Save" для збереження змін або "Cancel" для скасування.</li>
+                    </ul>
+                    <p><b>Приклад:</b> Введіть <code>user@example.com</code> як email і <code>John Doe</code> як ім’я, потім натисніть "Save". Якщо email некоректний, з’явиться повідомлення про помилку.</p>
+                    <p><b>Порада:</b> Переконайтеся, що рядок підключення до бази даних дійсний, інакше SQL-тести можуть не працювати.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як працюють статистичні графіки?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Вкладка "Statistics" відображає три графіки для аналізу ваших тестів:</p>
+                    <ul>
+                        <li><b>Кругова діаграма:</b> Показує співвідношення успішних і невдалих тестів.</li>
+                        <li><b>Стовпчикова діаграма:</b> Відображає кількість успішних і невдалих тестів за типами (API, SQL).</li>
+                        <li><b>Лінійна діаграма:</b> Показує тренд тривалості виконання тестів з часом.</li>
+                    </ul>
+                    <p><b>Приклад:</b> Якщо кругова діаграма показує 70% успішних тестів, а стовпчикова діаграма вказує, що більшість невдач у SQL-тестах, перевірте SQL-запити на помилки.</p>
+                    <p><b>Порада:</b> Якщо графіки не завантажуються, перевірте консоль браузера (F12 → Console) на наявність помилок, таких як проблеми з токеном авторизації.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як обробляються помилки при завантаженні даних?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Якщо дані не завантажуються, наприклад, у вкладці "Statistics" чи під час редагування профілю:</p>
+                    <ul>
+                        <li><b>Перевірте токен:</b> Токен авторизації може бути простроченим. Оновіть його в налаштуваннях профілю.</li>
+                        <li><b>Перевірте консоль:</b> Відкрийте консоль браузера (F12 → Console), щоб побачити деталі помилки, наприклад, <code>401 Unauthorized</code>.</li>
+                        <li><b>Перевірте мережу:</b> Переконайтеся, що сервер доступний за адресою <code>https://localhost:7200</code>.</li>
+                    </ul>
+                    <p><b>Приклад:</b> Якщо вкладка "Statistics" показує "No Statistics", перевірте, чи є у вас збережені результати тестів, і чи працює сервер.</p>
+                    <p><b>Порада:</b> Використовуйте режим "Debug" у браузері, щоб отримати детальні логи помилок.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як працює рендеринг даних у вкладках?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Дані у вкладках (APIs, Scenarios, SQL, Test Results) відображаються динамічно за допомогою JavaScript:</p>
+                    <ul>
+                        <li><b>Завантаження даних:</b> Дані (API-тести, сценарії, SQL-тести, результати) завантажуються з сервера у форматі JSON.</li>
+                        <li><b>Рендеринг:</b> JavaScript генерує HTML-картки для кожного елемента, які можна розгортати для перегляду деталей.</li>
+                        <li><b>Оновлення:</b> При зміні фільтра або вкладки дані перерендерюються відповідно до вибраного фільтра.</li>
+                    </ul>
+                    <p><b>Приклад:</b> У вкладці "APIs" картка тесту показує назву, метод і URL. Клацніть на картку, щоб розгорнути деталі, такі як очікуваний код статусу.</p>
+                    <p><b>Порада:</b> Якщо дані не відображаються, перевірте консоль браузера на помилки серіалізації JSON.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як працює авторизація для API-запитів у профілі?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Для доступу до даних профілю та статистики використовується JWT-токен:</p>
+                    <ul>
+                        <li><b>Отримання токена:</b> Токен зберігається в cookie (<code>AccessToken</code>) і додається до заголовка <code>Authorization: Bearer</code> для запитів.</li>
+                        <li><b>Запити:</b> Запити до API, наприклад, <code>https://localhost:7200/api/account/me</code>, включають токен для автентифікації.</li>
+                        <li><b>Помилки:</b> Якщо токен недійсний, з’явиться помилка <code>401 Unauthorized</code>.</li>
+                    </ul>
+                    <p><b>Приклад:</b> При редагуванні профілю запит до <code>/api/account/UpdateProfile</code> використовує токен для перевірки вашої особи.</p>
+                    <p><b>Порада:</b> Якщо виникають помилки авторизації, перевірте cookie в браузері або оновіть токен у налаштуваннях.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як налаштувати рядок підключення до бази даних?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Рядок підключення до бази даних потрібен для виконання SQL-тестів:</p>
+                    <ul>
+                        <li>Відкрийте модальне вікно "Edit Profile".</li>
+                        <li>
+                            У полі "Database Connection String" введіть рядок, наприклад:
+                            <pre><code>
+Server=localhost;Database=TestDB;User Id=sa;Password=your_password;
+                            </code></pre>
+                        </li>
+                        <li>Натисніть "Save" для збереження.</li>
+                    </ul>
+                    <p><b>Приклад:</b> Якщо ваш SQL-сервер на <code>localhost</code>, введіть рядок підключення, як показано вище, і збережіть.</p>
+                    <p><b>Порада:</b> Перевірте синтаксис рядка підключення та доступність сервера перед збереженням.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-item-header" onclick="toggleFaqItem(this)">
+                    <h3>Як інтерпретувати помилки в консолі браузера?</h3>
+                    <span class="toggle-icon"></span>
+                </div>
+                <div class="faq-item-content">
+                    <p>Консоль браузера (F12 → Console) допомагає діагностувати проблеми:</p>
+                    <ul>
+                        <li><b>Помилки серіалізації:</b> Якщо JSON-дані некоректні, ви побачите повідомлення типу <code>Serialization error</code>.</li>
+                        <li><b>Помилки мережі:</b> Наприклад, <code>Failed to fetch</code> може вказувати на проблеми з сервером або токеном.</li>
+                        <li><b>Помилки JavaScript:</b> Наприклад, <code>undefined is not a function</code> може вказувати на проблему в коді.</li>
+                    </ul>
+                    <p><b>Приклад:</b> Якщо ви бачите <code>Failed to load statistics: 401 Unauthorized</code>, перевірте токен авторизації.</p>
+                    <p><b>Порада:</b> Використовуйте вкладку "Network" у консолі браузера, щоб перевірити деталі HTTP-запитів.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleFaqItem(element) {
+            const faqItem = element.closest('.faq-item');
+            const isActive = faqItem.classList.contains('active');
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (!isActive) {
+                faqItem.classList.add('active');
+            }
+        }
+    </script>

@@ -24,7 +24,12 @@ namespace Backend.AppDbContext
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                     v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null)
                 );
-
+            modelBuilder.Entity<ApiTest>()
+              .Property(e => e.QueryParameters)
+              .HasConversion(
+                  v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                  v => JsonSerializer.Deserialize<Dictionary<string, string>>(v, (JsonSerializerOptions?)null)
+              );
             modelBuilder.Entity<ApiTest>()
                 .Property(e => e.BodyJson)
                 .HasConversion(
@@ -45,6 +50,7 @@ namespace Backend.AppDbContext
         public DbSet<SqlTest> SqlTests { get; set; }
         public DbSet<TestResult> TestResults { get; set; }
         public DbSet<ApiTestScenario> ApiTestScenarios { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         protected ApplicationDbContext()
         {
         }

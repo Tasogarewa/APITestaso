@@ -3,6 +3,7 @@ using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Security.Claims;
 
@@ -76,8 +77,10 @@ namespace Backend.Controllers
             if (scenario == null)
                 return NotFound("Scenario not found or access denied.");
 
-            var httpClient = _testRunner._httpClientFactory.CreateClient();
+            if (!scenario.Tests.Any())
+                return BadRequest("No tests associated with the scenario.");
 
+            var httpClient = _testRunner._httpClientFactory.CreateClient();
             var results = await _testRunner.ExecuteScenarioAsync(scenario, httpClient, userId);
 
             return Ok(results);

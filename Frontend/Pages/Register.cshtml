@@ -1,0 +1,165 @@
+﻿@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+@section Styles {
+    <style>
+        .register-page {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', 'Arial', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1c2526, #2e3b3e);
+        }
+
+            .register-page h2 {
+                color: #6d8299;
+                text-align: center;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                text-shadow: 0 0 10px #6d8299, 0 0 20px #6d8299;
+                margin-bottom: 30px;
+                animation: glow 2s ease-in-out infinite alternate;
+            }
+
+            .register-page form {
+                background: rgba(46, 59, 62, 0.9);
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 0 20px rgba(109, 130, 153, 0.3);
+                width: 100%;
+                max-width: 400px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(109, 130, 153, 0.2);
+            }
+
+            .register-page .form-group {
+                margin-bottom: 20px;
+            }
+
+            .register-page label {
+                color: #6d8299;
+                font-size: 14px;
+                display: block;
+                margin-bottom: 5px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .register-page input {
+                width: 100%;
+                padding: 10px;
+                border: none;
+                border-radius: 5px;
+                background: rgba(255, 255, 255, 0.1);
+                color: #6d8299;
+                font-family: inherit;
+                outline: none;
+                transition: all 0.3s ease;
+            }
+
+                .register-page input:focus {
+                    background: rgba(255, 255, 255, 0.2);
+                    box-shadow: 0 0 10px rgba(109, 130, 153, 0.5);
+                }
+
+                .register-page input.invalid {
+                    border: 1px solid #ff5555;
+                }
+
+            .register-page .validation-message {
+                color: #ff5555;
+                font-size: 12px;
+                display: block;
+                margin-top: 5px;
+            }
+
+            .register-page .error-alert {
+                background: rgba(255, 85, 85, 0.2);
+                color: #ff5555;
+                padding: 10px;
+                border-radius: 5px;
+                text-align: center;
+                margin-bottom: 20px;
+                display: none;
+            }
+
+            .register-page button {
+                width: 100%;
+                padding: 12px;
+                background: #6d8299;
+                border: none;
+                border-radius: 5px;
+                color: #1c2526;
+                font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+                .register-page button:hover {
+                    background: #536878;
+                    transform: scale(1.05);
+                    box-shadow: 0 0 15px rgba(109, 130, 153, 0.7);
+                }
+
+      
+    </style>
+}
+
+<div class="register-page">
+    <h2>Register</h2>
+    <div id="error-alert" class="error-alert">@Model.ErrorMessage</div>
+    <form method="post" id="register-form">
+        <div class="form-group">
+            <label asp-for="Input.Email">Email</label>
+            <input asp-for="Input.Email" class="form-control" />
+            <span asp-validation-for="Input.Email" class="validation-message"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.FullName">Full Name</label>
+            <input asp-for="Input.FullName" class="form-control" />
+            <span asp-validation-for="Input.FullName" class="validation-message"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.Password">Password</label>
+            <input asp-for="Input.Password" type="password" class="form-control" />
+            <span asp-validation-for="Input.Password" class="validation-message"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Input.ConfirmPassword">Confirm Password</label>
+            <input asp-for="Input.ConfirmPassword" type="password" class="form-control" />
+            <span asp-validation-for="Input.ConfirmPassword" class="validation-message"></span>
+        </div>
+        <button type="submit">Register</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            var errorMessage = '@Model.ErrorMessage';
+            if (errorMessage) {
+                $('#error-alert').show();
+            }
+
+            $('#register-form').validate({
+                errorClass: 'validation-message',
+                highlight: function (element) {
+                    $(element).addClass('invalid');
+                },
+                unhighlight: function (element) {
+                    $(element).removeClass('invalid');
+                }
+            });
+        });
+    </script>
+}
